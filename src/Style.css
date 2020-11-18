@@ -1,0 +1,38 @@
+﻿html {
+    height: 100%;
+}
+
+body {
+    background-color: silver;
+    margin: 0px;
+    min-height: 100%;
+    height:auto !important;
+    height: 100%;
+}
+
+#debugWindow {
+    background-color: black;
+    color: #1FC742;
+    height: 100%;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 300px;
+    z-index: 999;
+    padding: 10px;
+}
+
+
+
+
+#gameCanvas {
+    background-color: #686868;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    right: 4400px;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+}
