@@ -4,32 +4,113 @@
     <meta charset="utf-8" />
     <title>Emulator</title>
     <script src="CPU.js" type="text/javascript"></script>
-    <script src="index.js" type="text/javascript"></script>
+    <script src="bus.js" type="text/javascript"></script>
+    <script src="Cartridge.js" type="text/javascript"></script>
+
     <link rel="stylesheet" href="style.css">
+    <script>function toHex(number, size) {
+            let hex = number.toString(16).toUpperCase();
+            while (hex.length < size) {
+                hex = "0" + hex;
+            }
+            return "0x" + hex;
+        }
+        function toBin(number) {
+            let bin = number.toString(2);
+            while (bin.length < 8) {
+                bin = "0" + bin;
+            }
+            return bin;
+        }
+       
+
+
+
+        var cartridge = new window.Cartridge();
+
+        //
+
+        this.stkp = 0;   // Stack pointer
+        this.status = 0; // Status register
+        this.pc = 0 // Program Counter
+
+
+
+        let bus = new window.Bus();
+        let cpu = new window.CPU(bus);
+
+
+        //cpu.reset();
+        console.log(cpu.stkp);
+
+
+        //cpu.reset();
+        console.log("test");
+
+        setInterval(function () {
+            document.getElementById("reg_a_h").innerHTML = toHex(cpu.a, 2);
+            document.getElementById("reg_x_h").innerHTML = toHex(cpu.x, 2);
+            document.getElementById("reg_y_h").innerHTML = toHex(cpu.y, 2);
+            document.getElementById("stkp_h").innerHTML = toHex(cpu.stkp, 4);
+            document.getElementById("status_h").innerHTML = toHex(cpu.status, 2);
+            document.getElementById("pc_h").innerHTML = toHex(cpu.pc, 2);
+
+            document.getElementById("reg_a_b").innerHTML = toBin(cpu.a);
+            document.getElementById("reg_x_b").innerHTML = toBin(cpu.x);
+            document.getElementById("reg_y_b").innerHTML = toBin(cpu.y);
+            document.getElementById("stkp_b").innerHTML = toBin(cpu.stkp);
+            document.getElementById("status_b").innerHTML = toBin(cpu.status);
+            document.getElementById("pc_b").innerHTML = toBin(cpu.pc);
+
+
+        }, 500);
+    </script>
 </head>
 <body>
     <div id="debugWindow">
         <h1>Registers</h1>
-        <div>
-            <table>
+        <div id="variables">
+            <table id="registerTable">
                 <thead><tr><td></td><td></td></tr></thead>
                 <tbody>
                     <tr>
                         <td>A</td>
-                        <td>0x2200</td>
+                        <td id="reg_a_h">0x2200</td>
+                        <td id="reg_a_b">0x2200</td>
                     </tr>
                     <tr>
-                        <td>B</td>
-                        <td>0x2200</td>
+                        <td>X</td>
+                        <td id="reg_x_h">0x2200</td>
+                        <td id="reg_x_b">0x2200</td>
                     </tr>
                     <tr>
-                        <td>C</td>
-                        <td>0x2200</td>
+                        <td>Y</td>
+                        <td id="reg_y_h">0x2200</td>
+                        <td id="reg_y_b">0x2200</td>
                     </tr>
-
+                    <tr>
+                        <td>StackPtr</td>
+                        <td id="stkp_h">0x2200</td>
+                        <td id="stkp_b">0x2200</td>
+                    </tr>
+                    <tr>
+                        <td>Status</td>
+                        <td id="status_h">0x2200</td>
+                        <td id="status_b">0x2200</td>
+                    </tr>
+                    <tr>
+                        <td>Prog cnt.</td>
+                        <td id="pc_h">0x2200</td>
+                        <td id="pc_b">0x2200</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
+        <div id="commands">
+            <button onclick="cpu.reset()">Reset</button>
+            <input type="file" onchange="cartridge.load(document.querySelector('input[type=file]').files[0])"/>
+
+</div>
     </div>
     <canvas id="gameCanvas" />
 </body>

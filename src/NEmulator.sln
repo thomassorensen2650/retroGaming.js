@@ -4,9 +4,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{66968F61-CB52-4FA8-B26F-ED6C7A1163DE}"
 	ProjectSection(SolutionItems) = preProject
 		CPU.js = CPU.js
-		index.js = index.js
 		index.html = index.html
 		Style.css = Style.css
+		bus.js = bus.js
+		Cartridge.js = Cartridge.js
 	EndProjectSection
 EndProject
 Global

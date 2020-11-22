@@ -22,6 +22,17 @@ body {
     padding: 10px;
 }
 
+#debugWindow h1 {
+    width: 100%;
+    text-align: center;
+    margin: 0px;
+    padding: 10px 0px 0px 0px ;
+    border-bottom: 1px solid green;
+}
+#registerTable {
+    width: 100%;
+    padding: 5px;
+}
 
 
 

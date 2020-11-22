@@ -1,11 +1,18 @@
 ﻿<Properties>
-  <MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.Workbench ActiveDocument="CPU.js">
+    <Files>
+      <File FileName="Style.css" Line="32" Column="1" />
+      <File FileName="index.html" Line="29" Column="45" />
+      <File FileName="CPU.js" Line="189" Column="4" />
+      <File FileName="Cartridge.js" Line="6" Column="5" />
+      <File FileName="bus.js" Line="19" Column="14" />
+    </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
           <Node name="NEmulator" expanded="True">
             <Node name="Solution Items" expanded="True">
-              <Node name="/Users/tsorensen1/Documents/git/retroGaming.js/src/index.html" selected="True" />
+              <Node name="/Users/tsorensen1/Documents/git/retroGaming.js/src/CPU.js" selected="True" />
             </Node>
           </Node>
         </State>
