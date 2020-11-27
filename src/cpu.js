@@ -1,24 +1,22 @@
-﻿"use strict";
-
-
-window.CPU = function CPU(bus) {
-
+﻿window.CPU = {
 
 	// Registers
-	this.a = 0;
-	this.x = 0;
-	this.y = 0;
-	this.stkp = 0;   // Stack pointer
-	this.status = 0; // Status register
-	this.pc = 0; // Program Counter
+	a : 0,
+	x : 0,
+	y : 0,
+	stkp : 0,   // Stack pointer
+	status : 0, // Status register
+	pc : 0, // Program Counter
 
 	// Internal helper variabvles
-	this._addr_rel = 0x0000;
-	this._addr_abs = 0x0000;
-	this._fetched = 0x00;
-	this._cycles = 8;
+	_addr_rel : 0x0000,
+	_addr_abs : 0x0000,
+	_fetched : 0x00,
+	_cycles : 8,
+	_opcode : 0,
+	_bus : null,
 
-	this._flags = {
+	_flags : {
 		C: (1 << 0),	// Carry Bit
 		Z: (1 << 1),	// Zero
 		I: (1 << 2),	// Disable Interrupts
@@ -28,292 +26,290 @@ window.CPU = function CPU(bus) {
 		V: (1 << 6),	// Overflow
 		N: (1 << 7),	// Negative
 
-	};
+	},
 
 	// Setup OP Code Mapping
-	this.lookup = 
+	lookup : 
 	[
-		{ name :"BRK", op : this.op_BRK, adr_mode : this.adr_IMM, cycles : 7 },
-		{ name :"ORA", op : this.op_ORA, adr_mode : this.adr_IZX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 3 },
-		{ name :"ORA", op : this.op_ORA, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"ASL", op : this.op_ASL, adr_mode : this.adr_ZP0, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"PHP", op : this.op_PHP, adr_mode : this.adr_IMP, cycles : 3 },
-		{ name :"ORA", op : this.op_ORA, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"ASL", op : this.op_ASL, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"ORA", op : this.op_ORA, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"ASL", op : this.op_ASL, adr_mode : this.adr_ABS, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"BPL", op : this.op_BPL, adr_mode : this.adr_REL, cycles : 2 },
-		{ name :"ORA", op : this.op_ORA, adr_mode : this.adr_IZY, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"ORA", op : this.op_ORA, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"ASL", op : this.op_ASL, adr_mode : this.adr_ZPX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"CLC", op : this.op_CLC, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"ORA", op : this.op_ORA, adr_mode : this.adr_ABY, cycles : 4 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"ORA", op : this.op_ORA, adr_mode : this.adr_ABX, cycles : 4 },
-		{ name :"ASL", op : this.op_ASL, adr_mode : this.adr_ABX, cycles : 7 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"JSR", op : this.op_JSR, adr_mode : this.adr_ABS, cycles : 6 },
-		{ name :"AND", op : this.op_AND, adr_mode : this.adr_IZX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"BIT", op : this.op_BIT, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"AND", op : this.op_AND, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"ROL", op : this.op_ROL, adr_mode : this.adr_ZP0, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"PLP", op : this.op_PLP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"AND", op : this.op_AND, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"ROL", op : this.op_ROL, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"BIT", op : this.op_BIT, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"AND", op : this.op_AND, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"ROL", op : this.op_ROL, adr_mode : this.adr_ABS, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"BMI", op : this.op_BMI, adr_mode : this.adr_REL, cycles : 2 },
-		{ name :"AND", op : this.op_AND, adr_mode : this.adr_IZY, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"AND", op : this.op_AND, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"ROL", op : this.op_ROL, adr_mode : this.adr_ZPX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"SEC", op : this.op_SEC, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"AND", op : this.op_AND, adr_mode : this.adr_ABY, cycles : 4 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"AND", op : this.op_AND, adr_mode : this.adr_ABX, cycles : 4 },
-		{ name :"ROL", op : this.op_ROL, adr_mode : this.adr_ABX, cycles : 7 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"RTI", op : this.op_RTI, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"EOR", op : this.op_EOR, adr_mode : this.adr_IZX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 3 },
-		{ name :"EOR", op : this.op_EOR, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"LSR", op : this.op_LSR, adr_mode : this.adr_ZP0, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"PHA", op : this.op_PHA, adr_mode : this.adr_IMP, cycles : 3 },
-		{ name :"EOR", op : this.op_EOR, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"LSR", op : this.op_LSR, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"JMP", op : this.op_JMP, adr_mode : this.adr_ABS, cycles : 3 },
-		{ name :"EOR", op : this.op_EOR, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"LSR", op : this.op_LSR, adr_mode : this.adr_ABS, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"BVC", op : this.op_BVC, adr_mode : this.adr_REL, cycles : 2 },
-		{ name :"EOR", op : this.op_EOR, adr_mode : this.adr_IZY, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"EOR", op : this.op_EOR, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"LSR", op : this.op_LSR, adr_mode : this.adr_ZPX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"CLI", op : this.op_CLI, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"EOR", op : this.op_EOR, adr_mode : this.adr_ABY, cycles : 4 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"EOR", op : this.op_EOR, adr_mode : this.adr_ABX, cycles : 4 },
-		{ name :"LSR", op : this.op_LSR, adr_mode : this.adr_ABX, cycles : 7 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"RTS", op : this.op_RTS, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"ADC", op : this.op_ADC, adr_mode : this.adr_IZX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 3 },
-		{ name :"ADC", op : this.op_ADC, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"ROR", op : this.op_ROR, adr_mode : this.adr_ZP0, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"PLA", op : this.op_PLA, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"ADC", op : this.op_ADC, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"ROR", op : this.op_ROR, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"JMP", op : this.op_JMP, adr_mode : this.adr_IND, cycles : 5 },
-		{ name :"ADC", op : this.op_ADC, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"ROR", op : this.op_ROR, adr_mode : this.adr_ABS, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"BVS", op : this.op_BVS, adr_mode : this.adr_REL, cycles : 2 },
-		{ name :"ADC", op : this.op_ADC, adr_mode : this.adr_IZY, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"ADC", op : this.op_ADC, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"ROR", op : this.op_ROR, adr_mode : this.adr_ZPX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"SEI", op : this.op_SEI, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"ADC", op : this.op_ADC, adr_mode : this.adr_ABY, cycles : 4 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"ADC", op : this.op_ADC, adr_mode : this.adr_ABX, cycles : 4 },
-		{ name :"ROR", op : this.op_ROR, adr_mode : this.adr_ABX, cycles : 7 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"STA", op : this.op_STA, adr_mode : this.adr_IZX, cycles : 6 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"STY", op : this.op_STY, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"STA", op : this.op_STA, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"STX", op : this.op_STX, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 3 },
-		{ name :"DEY", op : this.op_DEY, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"TXA", op : this.op_TXA, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"STY", op : this.op_STY, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"STA", op : this.op_STA, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"STX", op : this.op_STX, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"BCC", op : this.op_BCC, adr_mode : this.adr_REL, cycles : 2 },
-		{ name :"STA", op : this.op_STA, adr_mode : this.adr_IZY, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"STY", op : this.op_STY, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"STA", op : this.op_STA, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"STX", op : this.op_STX, adr_mode : this.adr_ZPY, cycles : 4 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"TYA", op : this.op_TYA, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"STA", op : this.op_STA, adr_mode : this.adr_ABY, cycles : 5 },
-		{ name :"TXS", op : this.op_TXS, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"STA", op : this.op_STA, adr_mode : this.adr_ABX, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"LDY", op : this.op_LDY, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"LDA", op : this.op_LDA, adr_mode : this.adr_IZX, cycles : 6 },
-		{ name :"LDX", op : this.op_LDX, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"LDY", op : this.op_LDY, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"LDA", op : this.op_LDA, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"LDX", op : this.op_LDX, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 3 },
-		{ name :"TAY", op : this.op_TAY, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"LDA", op : this.op_LDA, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"TAX", op : this.op_TAX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"LDY", op : this.op_LDY, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"LDA", op : this.op_LDA, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"LDX", op : this.op_LDX, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"BCS", op : this.op_BCS, adr_mode : this.adr_REL, cycles : 2 },
-		{ name :"LDA", op : this.op_LDA, adr_mode : this.adr_IZY, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"LDY", op : this.op_LDY, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"LDA", op : this.op_LDA, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"LDX", op : this.op_LDX, adr_mode : this.adr_ZPY, cycles : 4 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"CLV", op : this.op_CLV, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"LDA", op : this.op_LDA, adr_mode : this.adr_ABY, cycles : 4 },
-		{ name :"TSX", op : this.op_TSX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"LDY", op : this.op_LDY, adr_mode : this.adr_ABX, cycles : 4 },
-		{ name :"LDA", op : this.op_LDA, adr_mode : this.adr_ABX, cycles : 4 },
-		{ name :"LDX", op : this.op_LDX, adr_mode : this.adr_ABY, cycles : 4 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"CPY", op : this.op_CPY, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"CMP", op : this.op_CMP, adr_mode : this.adr_IZX, cycles : 6 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"CPY", op : this.op_CPY, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"CMP", op : this.op_CMP, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"DEC", op : this.op_DEC, adr_mode : this.adr_ZP0, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"INY", op : this.op_INY, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"CMP", op : this.op_CMP, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"DEX", op : this.op_DEX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"CPY", op : this.op_CPY, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"CMP", op : this.op_CMP, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"DEC", op : this.op_DEC, adr_mode : this.adr_ABS, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"BNE", op : this.op_BNE, adr_mode : this.adr_REL, cycles : 2 },
-		{ name :"CMP", op : this.op_CMP, adr_mode : this.adr_IZY, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"CMP", op : this.op_CMP, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"DEC", op : this.op_DEC, adr_mode : this.adr_ZPX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"CLD", op : this.op_CLD, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"CMP", op : this.op_CMP, adr_mode : this.adr_ABY, cycles : 4 },
-		{ name :"NOP", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"CMP", op : this.op_CMP, adr_mode : this.adr_ABX, cycles : 4 },
-		{ name :"DEC", op : this.op_DEC, adr_mode : this.adr_ABX, cycles : 7 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"CPX", op : this.op_CPX, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"SBC", op : this.op_SBC, adr_mode : this.adr_IZX, cycles : 6 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"CPX", op : this.op_CPX, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"SBC", op : this.op_SBC, adr_mode : this.adr_ZP0, cycles : 3 },
-		{ name :"INC", op : this.op_INC, adr_mode : this.adr_ZP0, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 5 },
-		{ name :"INX", op : this.op_INX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"SBC", op : this.op_SBC, adr_mode : this.adr_IMM, cycles : 2 },
-		{ name :"NOP", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_SBC, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"CPX", op : this.op_CPX, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"SBC", op : this.op_SBC, adr_mode : this.adr_ABS, cycles : 4 },
-		{ name :"INC", op : this.op_INC, adr_mode : this.adr_ABS, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"BEQ", op : this.op_BEQ, adr_mode : this.adr_REL, cycles : 2 },
-		{ name :"SBC", op : this.op_SBC, adr_mode : this.adr_IZY, cycles : 5 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 8 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"SBC", op : this.op_SBC, adr_mode : this.adr_ZPX, cycles : 4 },
-		{ name :"INC", op : this.op_INC, adr_mode : this.adr_ZPX, cycles : 6 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 6 },
-		{ name :"SED", op : this.op_SED, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"SBC", op : this.op_SBC, adr_mode : this.adr_ABY, cycles : 4 },
-		{ name :"NOP", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 2 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 },
-		{ name :"???", op : this.op_NOP, adr_mode : this.adr_IMP, cycles : 4 },
-		{ name :"SBC", op : this.op_SBC, adr_mode : this.adr_ABX, cycles : 4 },
-		{ name :"INC", op : this.op_INC, adr_mode : this.adr_ABX, cycles : 7 },
-		{ name :"???", op : this.op_XXX, adr_mode : this.adr_IMP, cycles : 7 }
-	];
+		{ name :"BRK", op : this.op_BRK, addrmode : this.adr_IMM, cycles : 7 },
+		{ name :"ORA", op : this.op_ORA, addrmode : this.adr_IZX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 3 },
+		{ name :"ORA", op : this.op_ORA, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"ASL", op : this.op_ASL, addrmode : this.adr_ZP0, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"PHP", op : this.op_PHP, addrmode : this.adr_IMP, cycles : 3 },
+		{ name :"ORA", op : this.op_ORA, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"ASL", op : this.op_ASL, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"ORA", op : this.op_ORA, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"ASL", op : this.op_ASL, addrmode : this.adr_ABS, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"BPL", op : this.op_BPL, addrmode : this.adr_REL, cycles : 2 },
+		{ name :"ORA", op : this.op_ORA, addrmode : this.adr_IZY, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"ORA", op : this.op_ORA, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"ASL", op : this.op_ASL, addrmode : this.adr_ZPX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"CLC", op : this.op_CLC, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"ORA", op : this.op_ORA, addrmode : this.adr_ABY, cycles : 4 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"ORA", op : this.op_ORA, addrmode : this.adr_ABX, cycles : 4 },
+		{ name :"ASL", op : this.op_ASL, addrmode : this.adr_ABX, cycles : 7 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"JSR", op : this.op_JSR, addrmode : this.adr_ABS, cycles : 6 },
+		{ name :"AND", op : this.op_AND, addrmode : this.adr_IZX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"BIT", op : this.op_BIT, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"AND", op : this.op_AND, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"ROL", op : this.op_ROL, addrmode : this.adr_ZP0, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"PLP", op : this.op_PLP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"AND", op : this.op_AND, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"ROL", op : this.op_ROL, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"BIT", op : this.op_BIT, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"AND", op : this.op_AND, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"ROL", op : this.op_ROL, addrmode : this.adr_ABS, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"BMI", op : this.op_BMI, addrmode : this.adr_REL, cycles : 2 },
+		{ name :"AND", op : this.op_AND, addrmode : this.adr_IZY, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"AND", op : this.op_AND, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"ROL", op : this.op_ROL, addrmode : this.adr_ZPX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"SEC", op : this.op_SEC, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"AND", op : this.op_AND, addrmode : this.adr_ABY, cycles : 4 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"AND", op : this.op_AND, addrmode : this.adr_ABX, cycles : 4 },
+		{ name :"ROL", op : this.op_ROL, addrmode : this.adr_ABX, cycles : 7 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"RTI", op : this.op_RTI, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"EOR", op : this.op_EOR, addrmode : this.adr_IZX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 3 },
+		{ name :"EOR", op : this.op_EOR, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"LSR", op : this.op_LSR, addrmode : this.adr_ZP0, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"PHA", op : this.op_PHA, addrmode : this.adr_IMP, cycles : 3 },
+		{ name :"EOR", op : this.op_EOR, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"LSR", op : this.op_LSR, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"JMP", op : this.op_JMP, addrmode : this.adr_ABS, cycles : 3 },
+		{ name :"EOR", op : this.op_EOR, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"LSR", op : this.op_LSR, addrmode : this.adr_ABS, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"BVC", op : this.op_BVC, addrmode : this.adr_REL, cycles : 2 },
+		{ name :"EOR", op : this.op_EOR, addrmode : this.adr_IZY, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"EOR", op : this.op_EOR, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"LSR", op : this.op_LSR, addrmode : this.adr_ZPX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"CLI", op : this.op_CLI, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"EOR", op : this.op_EOR, addrmode : this.adr_ABY, cycles : 4 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"EOR", op : this.op_EOR, addrmode : this.adr_ABX, cycles : 4 },
+		{ name :"LSR", op : this.op_LSR, addrmode : this.adr_ABX, cycles : 7 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"RTS", op : this.op_RTS, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"ADC", op : this.op_ADC, addrmode : this.adr_IZX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 3 },
+		{ name :"ADC", op : this.op_ADC, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"ROR", op : this.op_ROR, addrmode : this.adr_ZP0, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"PLA", op : this.op_PLA, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"ADC", op : this.op_ADC, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"ROR", op : this.op_ROR, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"JMP", op : this.op_JMP, addrmode : this.adr_IND, cycles : 5 },
+		{ name :"ADC", op : this.op_ADC, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"ROR", op : this.op_ROR, addrmode : this.adr_ABS, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"BVS", op : this.op_BVS, addrmode : this.adr_REL, cycles : 2 },
+		{ name :"ADC", op : this.op_ADC, addrmode : this.adr_IZY, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"ADC", op : this.op_ADC, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"ROR", op : this.op_ROR, addrmode : this.adr_ZPX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"SEI", op : this.op_SEI, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"ADC", op : this.op_ADC, addrmode : this.adr_ABY, cycles : 4 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"ADC", op : this.op_ADC, addrmode : this.adr_ABX, cycles : 4 },
+		{ name :"ROR", op : this.op_ROR, addrmode : this.adr_ABX, cycles : 7 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"STA", op : this.op_STA, addrmode : this.adr_IZX, cycles : 6 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"STY", op : this.op_STY, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"STA", op : this.op_STA, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"STX", op : this.op_STX, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 3 },
+		{ name :"DEY", op : this.op_DEY, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"TXA", op : this.op_TXA, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"STY", op : this.op_STY, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"STA", op : this.op_STA, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"STX", op : this.op_STX, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"BCC", op : this.op_BCC, addrmode : this.adr_REL, cycles : 2 },
+		{ name :"STA", op : this.op_STA, addrmode : this.adr_IZY, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"STY", op : this.op_STY, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"STA", op : this.op_STA, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"STX", op : this.op_STX, addrmode : this.adr_ZPY, cycles : 4 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"TYA", op : this.op_TYA, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"STA", op : this.op_STA, addrmode : this.adr_ABY, cycles : 5 },
+		{ name :"TXS", op : this.op_TXS, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"STA", op : this.op_STA, addrmode : this.adr_ABX, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"LDY", op : this.op_LDY, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"LDA", op : this.op_LDA, addrmode : this.adr_IZX, cycles : 6 },
+		{ name :"LDX", op : this.op_LDX, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"LDY", op : this.op_LDY, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"LDA", op : this.op_LDA, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"LDX", op : this.op_LDX, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 3 },
+		{ name :"TAY", op : this.op_TAY, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"LDA", op : this.op_LDA, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"TAX", op : this.op_TAX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"LDY", op : this.op_LDY, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"LDA", op : this.op_LDA, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"LDX", op : this.op_LDX, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"BCS", op : this.op_BCS, addrmode : this.adr_REL, cycles : 2 },
+		{ name :"LDA", op : this.op_LDA, addrmode : this.adr_IZY, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"LDY", op : this.op_LDY, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"LDA", op : this.op_LDA, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"LDX", op : this.op_LDX, addrmode : this.adr_ZPY, cycles : 4 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"CLV", op : this.op_CLV, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"LDA", op : this.op_LDA, addrmode : this.adr_ABY, cycles : 4 },
+		{ name :"TSX", op : this.op_TSX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"LDY", op : this.op_LDY, addrmode : this.adr_ABX, cycles : 4 },
+		{ name :"LDA", op : this.op_LDA, addrmode : this.adr_ABX, cycles : 4 },
+		{ name :"LDX", op : this.op_LDX, addrmode : this.adr_ABY, cycles : 4 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"CPY", op : this.op_CPY, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"CMP", op : this.op_CMP, addrmode : this.adr_IZX, cycles : 6 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"CPY", op : this.op_CPY, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"CMP", op : this.op_CMP, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"DEC", op : this.op_DEC, addrmode : this.adr_ZP0, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"INY", op : this.op_INY, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"CMP", op : this.op_CMP, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"DEX", op : this.op_DEX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"CPY", op : this.op_CPY, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"CMP", op : this.op_CMP, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"DEC", op : this.op_DEC, addrmode : this.adr_ABS, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"BNE", op : this.op_BNE, addrmode : this.adr_REL, cycles : 2 },
+		{ name :"CMP", op : this.op_CMP, addrmode : this.adr_IZY, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"CMP", op : this.op_CMP, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"DEC", op : this.op_DEC, addrmode : this.adr_ZPX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"CLD", op : this.op_CLD, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"CMP", op : this.op_CMP, addrmode : this.adr_ABY, cycles : 4 },
+		{ name :"NOP", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"CMP", op : this.op_CMP, addrmode : this.adr_ABX, cycles : 4 },
+		{ name :"DEC", op : this.op_DEC, addrmode : this.adr_ABX, cycles : 7 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"CPX", op : this.op_CPX, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"SBC", op : this.op_SBC, addrmode : this.adr_IZX, cycles : 6 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"CPX", op : this.op_CPX, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"SBC", op : this.op_SBC, addrmode : this.adr_ZP0, cycles : 3 },
+		{ name :"INC", op : this.op_INC, addrmode : this.adr_ZP0, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 5 },
+		{ name :"INX", op : this.op_INX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"SBC", op : this.op_SBC, addrmode : this.adr_IMM, cycles : 2 },
+		{ name :"NOP", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_SBC, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"CPX", op : this.op_CPX, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"SBC", op : this.op_SBC, addrmode : this.adr_ABS, cycles : 4 },
+		{ name :"INC", op : this.op_INC, addrmode : this.adr_ABS, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"BEQ", op : this.op_BEQ, addrmode : this.adr_REL, cycles : 2 },
+		{ name :"SBC", op : this.op_SBC, addrmode : this.adr_IZY, cycles : 5 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 8 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"SBC", op : this.op_SBC, addrmode : this.adr_ZPX, cycles : 4 },
+		{ name :"INC", op : this.op_INC, addrmode : this.adr_ZPX, cycles : 6 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 6 },
+		{ name :"SED", op : this.op_SED, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"SBC", op : this.op_SBC, addrmode : this.adr_ABY, cycles : 4 },
+		{ name :"NOP", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 2 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 },
+		{ name :"???", op : this.op_NOP, addrmode : this.adr_IMP, cycles : 4 },
+		{ name :"SBC", op : this.op_SBC, addrmode : this.adr_ABX, cycles : 4 },
+		{ name :"INC", op : this.op_INC, addrmode : this.adr_ABX, cycles : 7 },
+		{ name :"???", op : this.op_XXX, addrmode : this.adr_IMP, cycles : 7 }
+	],
 	
-	// Setup Bus Connection
-	this.bus = bus;
-	this.write = function (byte) {
-		this.bus.write(byte);
-	}
+	connectBus : function(bus) {
+		console.log("Connecting CPU to Bus");
+		this._bus = bus;
+	},
+
 
 	// Reads an 8-bit byte from the bus, located at the specified 16-bit address
-
-	this.read = function (address) {
+	read : function (address) {
 		// In normal op "read only" is set to false. This may seem odd. Some
 		// devices on the bus may change state when they are read from, and this 
 		// is intentional under normal circumstances. However the disassembler will
 		// want to read the data at an address without changing the state of the
 		// devices on the bus
-		return this.bus.cpuRead(address, false);
-	}
+		return this._bus.cpuRead(address, false);
+	},
 
 	// Writes a byte to the bus at the specified address
 
-	this.write = function (address, data) {
-		this.bus.cpuWrite(address, data)
-	}
-
+	write : function (address, data) {
+		this._bus.cpuWrite(address, data)
+	},
 
 	///////////////////////////////////////////////////////////////////////////////
 	// EXTERNAL INPUTS
@@ -325,16 +321,14 @@ window.CPU = function CPU(bus) {
 	// allows the programmer to jump to a known and programmable location in the
 	// memory to start executing from. Typically the programmer would set the value
 	// at location 0xFFFC at compile time.
-
-	this.reset = function () {
-
+	reset : function () {
 
 		// Get address to set program counter to
 		this._addr_abs = 0xFFFC;
 		let lo = this.read(this._addr_abs + 0);
 		let hi = this.read(this._addr_abs + 1);
 
-		// Set it
+		// Set program counter 
 		this.pc = (hi << 8) | lo;
 
 		// Reset internal registers
@@ -345,14 +339,13 @@ window.CPU = function CPU(bus) {
 		this.status = 0x00 | this._flags.U;
 
 		// Clear internal helper variables
-
 		this._addr_rel = 0x0000;
 		this._addr_abs = 0x0000;
 		this._fetched = 0x00;
 
 		// Reset takes time
 		this._cycles = 8;
-	}
+	},
 
 
 	// CPU OPs
@@ -370,18 +363,17 @@ window.CPU = function CPU(bus) {
 	// is read form hard coded location 0xFFFE, which is subsequently
 	// set to the program counter.
 
-	this.irq = function () {
+	irq : function () {
 		// If interrupts are allowed
 		if (this.getFlag(this._flags.I) == 0) {
-			// Push the program counter to the stack. It's 16-bits dont
-			// forget so that takes two pushes
+			// Push the program counter to the stack. 
+			// It's 16-bits dont forget so that takes two pushes
 			this.write(0x0100 + this.stkp, (this.pc >> 8) & 0x00FF);
 			this.stkp--;
 			this.write(0x0100 + this.stkp, this.pc & 0x00FF);
 			this.stkp--;
 
 			// Then Push the status register to the stack
-
 			this.setFlag(this._flags.B, 0);
 			this.setFlag(this._flags.U, 1);
 			this.setFlag(this._flags.I, 1);
@@ -389,22 +381,21 @@ window.CPU = function CPU(bus) {
 			this.stkp--;
 
 			// Read new program counter location from fixed address
-			addr_abs = 0xFFFE;
-			let lo = this.read(this.addr_abs + 0);
-			let hi = this.read(this.addr_abs + 1);
+			this._addr_abs = 0xFFFE;
+			let lo = this.read(this._addr_abs + 0);
+			let hi = this.read(this._addr_abs + 1);
 			this.pc = (hi << 8) | lo;
 
 			// IRQs take time
 			this._cycles = 7;
 		}
-	}
+	},
 
 	
 	// A Non-Maskable Interrupt cannot be ignored. It behaves in exactly the
 	// same way as a regular IRQ, but reads the new program counter address
 	// form location 0xFFFA.
-
-	this.nmi = function() {
+	nmi : function() {
 		this.write(0x0100 + this.stkp, (this.pc >> 8) & 0x00FF);
 		this.stkp--;
 		write(0x0100 + this.stkp, this.pc & 0x00FF);
@@ -416,17 +407,17 @@ window.CPU = function CPU(bus) {
 		this.write(0x0100 + this.stkp, this.status);
 		this.stkp--;
 
-		this.addr_abs = 0xFFFA;
-		let lo = this.read(this.addr_abs + 0);
-		let hi = this.read(this.addr_abs + 1);
+		this._addr_abs = 0xFFFA;
+		let lo = this.read(this._addr_abs + 0);
+		let hi = this.read(this._addr_abs + 1);
 		this.pc = (hi << 8) | lo;
 
-		this.cycles = 8;
-	}
+		this._cycles = 8;
+	},
 
 	
 	// Perform one clock cycles worth of emulation
-	this.clock = function()  {
+	clock : function()  {
 		// Each instruction requires a variable number of clock cycles to execute.
 		// In my emulation, I only care about the final result and so I perform
 		// the entire computation in one hit. In hardware, each clock cycle would
@@ -437,30 +428,29 @@ window.CPU = function CPU(bus) {
 		// implement that delay by simply counting down the cycles required by 
 		// the instruction. When it reaches 0, the instruction is complete, and
 		// the next one is ready to be executed.
-		if (this.cycles == 0) {
+		if (this._cycles == 0) {
 			// Read next instruction byte. This 8-bit value is used to index
 			// the translation table to get the relevant information about
 			// how to implement the instruction
-
-			let opcode = this.read(pc);
+			this._opcode = this.read(this.pc);
 
 			// Always set the unused status flag bit to 1
-			this.setFlag(this._flags.U, true);
+			this.setFlag(this._flags.U, 1);
 
 			// Increment program counter, we read the opcode byte
 			this.pc++;
 
 			// Get Starting number of cycles
-			this.cycles = this.lookup[opcode].cycles;
+			this._cycles = this.lookup[this._opcode].cycles;
 
 			// Perform fetch of intermmediate data using the
 			// required addressing mode
-			let additional_cycle1 = lookup[opcode].addrmode;
+			let additional_cycle1 = lookup[this._opcode].addrmode;
 
 			// Perform op
-			let additional_cycle2 = lookup[opcode].operate;
+			let additional_cycle2 = lookup[this._opcode].operate;
 
-			// The adr_mode and opcode may have altered the number
+			// The addrmode and opcode may have altered the number
 			// of cycles this instruction requires before its completed
 			cycles += (additional_cycle1 & additional_cycle2);
 
@@ -474,28 +464,27 @@ window.CPU = function CPU(bus) {
 
 		// Decrement the number of cycles remaining for this instruction
 		cycles--;
-	}
+	},
 
 
 	///////////////////////////////////////////////////////////////////////////////
 	// FLAG FUNCTIONS
 
 	// Returns the value of a specific bit of the status register
-	this.getFlag = function(f) {
+	getFlag : function(f) {
 		return ((this.status & f) > 0) ? 1 : 0;
-	}
+	},
 
 	// Sets or clears a specific bit of the status register
-	this.setFlag = function(f, v) {
+	setFlag : function(f, v) {
 		if (v) {
 			status |= f;
 		}
 		else {
 			status &= ~f;
 		}	
-	}
+	},
 
-	/*
 	///////////////////////////////////////////////////////////////////////////////
 	// ADDRESSING MODES
 
@@ -514,131 +503,116 @@ window.CPU = function CPU(bus) {
 	// There is no additional data required for this instruction. The instruction
 	// does something very simple like like sets a status bit. However, we will
 	// target the accumulator, for instructions like PHA
-	uint8_t olc6502:: IMP()
-	{
+	adr_IMP : function() {
 		fetched = a;
 		return 0;
-	}
-
+	},
 
 	// Address Mode: Immediate
 	// The instruction expects the next byte to be used as a value, so we'll prep
 	// the read address to point to the next byte
-	uint8_t olc6502:: IMM()
-	{
-		addr_abs = pc++;
+	adr_IMM : function() {
+		this.addr_abs = this.pc++;
 		return 0;
-	}
-
-
+	},
 
 	// Address Mode: Zero Page
 	// To save program bytes, zero page addressing allows you to absolutely address
 	// a location in first 0xFF bytes of address range. Clearly this only requires
 	// one byte instead of the usual two.
-	uint8_t olc6502:: ZP0()
-	{
-		addr_abs = read(pc);
-		pc++;
-		addr_abs &= 0x00FF;
+	adr_ZP0 : function() {
+		this.addr_abs = this.read(this.pc);
+		this.pc++;
+		this.addr_abs &= 0x00FF;
 		return 0;
-	}
-
-
+	},
 
 	// Address Mode: Zero Page with X Offset
 	// Fundamentally the same as Zero Page addressing, but the contents of the X Register
 	// is added to the supplied single byte address. This is useful for iterating through
 	// ranges within the first page.
-	uint8_t olc6502:: ZPX()
-	{
-		addr_abs = (read(pc) + x);
-		pc++;
-		addr_abs &= 0x00FF;
+	adr_ZPX : function() {
+		this.addr_abs = (this.read(this.pc) + this.x);
+		this.pc++;
+		this.addr_abs &= 0x00FF;
 		return 0;
-	}
+	},
 
 
 	// Address Mode: Zero Page with Y Offset
 	// Same as above but uses Y Register for offset
-	uint8_t olc6502:: ZPY()
-	{
-		addr_abs = (read(pc) + y);
-		pc++;
-		addr_abs &= 0x00FF;
+	adr_ZPY : function() {
+		this.addr_abs = (this.read(this.pc) + this.y);
+		this.pc++;
+		this.addr_abs &= 0x00FF;
 		return 0;
-	}
+	},
 
 
 	// Address Mode: Relative
 	// This address mode is exclusive to branch instructions. The address
 	// must reside within -128 to +127 of the branch instruction, i.e.
 	// you cant directly branch to any address in the addressable range.
-	uint8_t olc6502:: REL()
-	{
-		addr_rel = read(pc);
-		pc++;
-		if (addr_rel & 0x80)
-			addr_rel |= 0xFF00;
+	adr_REL : function() {
+		this.addr_rel = this.read(this.pc);
+		this.pc++;
+		if (this.addr_rel & 0x80)
+			this.addr_rel |= 0xFF00;
 		return 0;
-	}
+	},
 
 
 	// Address Mode: Absolute 
 	// A full 16-bit address is loaded and used
-	uint8_t olc6502:: ABS()
-	{
-		uint16_t lo = read(pc);
-		pc++;
-		uint16_t hi = read(pc);
-		pc++;
+	adr_ABS : function() {
+		let lo = this.read(this.pc);
+		this.pc++;
+		let hi = this.read(this.pc);
+		this.pc++;
 
-		addr_abs = (hi << 8) | lo;
+		this.addr_abs = (hi << 8) | lo;
 
 		return 0;
-	}
-
+	},
 
 	// Address Mode: Absolute with X Offset
 	// Fundamentally the same as absolute addressing, but the contents of the X Register
 	// is added to the supplied two byte address. If the resulting address changes
 	// the page, an additional clock cycle is required
-	uint8_t olc6502:: ABX()
-	{
-		uint16_t lo = read(pc);
-		pc++;
-		uint16_t hi = read(pc);
-		pc++;
+	adr_ABX : function() {
+		let lo = this.read(this.pc);
+		this.pc++;
+		let hi = this.read(this.pc);
+		this.pc++;
 
-		addr_abs = (hi << 8) | lo;
-		addr_abs += x;
+		this.addr_abs = (hi << 8) | lo;
+		this.addr_abs += this.x;
 
-		if ((addr_abs & 0xFF00) != (hi << 8))
+		if ((this.addr_abs & 0xFF00) != (hi << 8))
 			return 1;
 		else
 			return 0;
-	}
+	},
 
 
 	// Address Mode: Absolute with Y Offset
 	// Fundamentally the same as absolute addressing, but the contents of the Y Register
 	// is added to the supplied two byte address. If the resulting address changes
 	// the page, an additional clock cycle is required
-	uint8_t olc6502:: ABY()
-	{
-		uint16_t lo = read(pc);
-		pc++;
-		uint16_t hi = read(pc);
-		pc++;
+	adr_ABY : function() {
+		let lo = this.read(this.pc);
+		this.pc++;
+		let hi = this.read(this.pc);
+		this.pc++;
 
-		addr_abs = (hi << 8) | lo;
-		addr_abs += y;
+		this.addr_abs = (hi << 8) | lo;
+		this.addr_abs += this.y;
 
-		if ((addr_abs & 0xFF00) != (hi << 8))
+		if ((this.addr_abs & 0xFF00) != (hi << 8))
 			return 1;
 		else
 			return 0;
-	}
+	},
 
 	// Note: The next 3 address modes use indirection (aka Pointers!)
 
@@ -650,69 +624,62 @@ window.CPU = function CPU(bus) {
 	// we need to cross a page boundary. This doesnt actually work on the chip as 
 	// designed, instead it wraps back around in the same page, yielding an 
 	// invalid actual address
-	uint8_t olc6502:: IND()
-	{
-		uint16_t ptr_lo = read(pc);
-		pc++;
-		uint16_t ptr_hi = read(pc);
-		pc++;
+	adr_IND : function() {
+		let ptr_lo = this.read(this.pc);
+		this.pc++;
+		let ptr_hi = this.read(this.pc);
+		this.pc++;
 
-		uint16_t ptr = (ptr_hi << 8) | ptr_lo;
+		let ptr = (ptr_hi << 8) | ptr_lo;
 
 		if (ptr_lo == 0x00FF) // Simulate page boundary hardware bug
 		{
-			addr_abs = (read(ptr & 0xFF00) << 8) | read(ptr + 0);
+			this.addr_abs = (this.read(ptr & 0xFF00) << 8) | this.read(ptr + 0);
 		}
 		else // Behave normally
 		{
-			addr_abs = (read(ptr + 1) << 8) | read(ptr + 0);
+			this.addr_abs = (this.read(ptr + 1) << 8) | this.read(ptr + 0);
 		}
 
 		return 0;
-	}
-
+	},
 
 	// Address Mode: Indirect X
 	// The supplied 8-bit address is offset by X Register to index
 	// a location in page 0x00. The actual 16-bit address is read 
 	// from this location
-	uint8_t olc6502:: IZX()
-	{
-		uint16_t t = read(pc);
-		pc++;
+	adr_IZX : function() {
+		let t = this.read(this.pc);
+		this.pc++;
 
-		uint16_t lo = read((uint16_t)(t + (uint16_t)x) & 0x00FF);
-		uint16_t hi = read((uint16_t)(t + (uint16_t)x + 1) & 0x00FF);
+		let lo = this.read((t + this.x) & 0x00FF);
+		let hi = this.read((t + this.x + 1) & 0x00FF);
 
-		addr_abs = (hi << 8) | lo;
+		this.addr_abs = (hi << 8) | lo;
 
 		return 0;
-	}
-
+	},
 
 	// Address Mode: Indirect Y
 	// The supplied 8-bit address indexes a location in page 0x00. From 
 	// here the actual 16-bit address is read, and the contents of
 	// Y Register is added to it to offset it. If the offset causes a
 	// change in page then an additional clock cycle is required.
-	uint8_t olc6502:: IZY()
-	{
-		uint16_t t = read(pc);
-		pc++;
+	adr_IZY : function() {
+		let t = this.read(this.pc);
+		this.pc++;
 
-		uint16_t lo = read(t & 0x00FF);
-		uint16_t hi = read((t + 1) & 0x00FF);
+		let lo = this.read(t & 0x00FF);
+		let hi = this.read((t + 1) & 0x00FF);
 
-		addr_abs = (hi << 8) | lo;
-		addr_abs += y;
+		this.addr_abs = (hi << 8) | lo;
+		this.addr_abs += this.y;
 
-		if ((addr_abs & 0xFF00) != (hi << 8))
+		if ((this.addr_abs & 0xFF00) != (hi << 8))
 			return 1;
 		else
 			return 0;
-	}
-
-
+	},
 
 	// This function sources the data used by the instruction into 
 	// a convenient numeric variable. Some instructions dont have to 
@@ -726,16 +693,12 @@ window.CPU = function CPU(bus) {
 	// 256, i.e. no far reaching memory fetch is required. "fetched"
 	// is a variable global to the CPU, and is set by calling this 
 	// function. It also returns it for convenience.
-	uint8_t olc6502:: fetch()
-	{
-		if (!(lookup[opcode].addrmode == & olc6502:: IMP))
-		fetched = read(addr_abs);
-		return fetched;
-	}
-
-
-
-
+	fetch : function() {
+		if (!(this.lookup[this._opcode].addrmode === this.adr_IMP)) {
+			this.fetched = this.read(this.addr_abs);
+		}
+		return this.fetched;
+	},
 
 	///////////////////////////////////////////////////////////////////////////////
 	// INSTRUCTION IMPLEMENTATIONS
@@ -806,35 +769,32 @@ window.CPU = function CPU(bus) {
 	//       Positive Number + Negative Number = Either Result -> Cannot Overflow
 	//       Positive Number + Positive Number = Positive Result -> OK! No Overflow
 	//       Negative Number + Negative Number = Negative Result -> OK! NO Overflow
-
-	uint8_t olc6502:: ADC()
-	{
+	op_ADC : function() {
 		// Grab the data that we are adding to the accumulator
-		fetch();
+		this.fetch();
 
 		// Add is performed in 16-bit domain for emulation to capture any
 		// carry bit, which will exist in bit 8 of the 16-bit word
-		temp = (uint16_t)a + (uint16_t)fetched + (uint16_t)GetFlag(C);
+		let temp = this.a + this._fetched + this.getFlag(this._flags.C);
 
 		// The carry flag out exists in the high byte bit 0
-		SetFlag(C, temp > 255);
+		this.setFlag(this._flags.C, temp > 255);
 
 		// The Zero flag is set if the result is 0
-		SetFlag(Z, (temp & 0x00FF) == 0);
+		this.setFlag(this._flags.Z, (temp & 0x00FF) == 0);
 
 		// The signed Overflow flag is set based on all that up there! :D
-		SetFlag(V, (~((uint16_t)a ^ (uint16_t)fetched) & ((uint16_t)a ^ (uint16_t)temp)) & 0x0080);
+		this.setFlag(this._flags.V, (~(this.a ^ this.fetched) & (this.a ^ this.temp)) & 0x0080);
 
 		// The negative flag is set to the most significant bit of the result
-		SetFlag(N, temp & 0x80);
+		this.setFlag(this._flags.N, temp & 0x80);
 
 		// Load the result into the accumulator (it's 8-bit dont forget!)
-		a = temp & 0x00FF;
+		this.a = temp & 0x00FF;
 
 		// This instruction has the potential to require an additional clock cycle
 		return 1;
-	}
-
+	},
 
 	// Instruction: Subtraction with Borrow In
 	// Function:    A = A - M - (1 - C)
@@ -861,25 +821,23 @@ window.CPU = function CPU(bus) {
 	// This means we already have the +1, so all we need to do is invert the bits
 	// of M, the data(!) therfore we can simply add, exactly the same way we did 
 	// before.
-
-	uint8_t olc6502:: SBC()
-	{
-		fetch();
+	op_SBC : function() {
+		this.fetch();
 
 		// Operating in 16-bit domain to capture carry out
 
 		// We can invert the bottom 8 bits with bitwise xor
-		uint16_t value = ((uint16_t)fetched) ^ 0x00FF;
+		let value = (this._fetched) ^ 0x00FF;
 
 		// Notice this is exactly the same as addition from here!
-		temp = (uint16_t)a + value + (uint16_t)GetFlag(C);
-		SetFlag(C, temp & 0xFF00);
-		SetFlag(Z, ((temp & 0x00FF) == 0));
-		SetFlag(V, (temp ^ (uint16_t)a) & (temp ^ value) & 0x0080);
-		SetFlag(N, temp & 0x0080);
-		a = temp & 0x00FF;
+		temp = this.a + value + this.getFlag(this._flags.C);
+		this.setFlag(this._flags.C, temp & 0xFF00);
+		this.setFlag(this._flags.Z, ((temp & 0x00FF) == 0));
+		this.setFlag(this._flags.V, (temp ^ this.a) & (temp ^ value) & 0x0080);
+		this.setFlag(this._flags.N, temp & 0x0080);
+		this.a = temp & 0x00FF;
 		return 1;
-	}
+	},
 
 	// OK! Complicated ops are done! the following are much simpler
 	// and conventional. The typical order of events is:
@@ -890,14 +848,13 @@ window.CPU = function CPU(bus) {
 	// 5) Return if instruction has potential to require additional 
 	//    clock cycle
 
-
+/* 
 	// Instruction: Bitwise Logic AND
 	// Function:    A = A & M
 	// Flags Out:   N, Z
-	uint8_t olc6502:: AND()
-	{
-		fetch();
-		a = a & fetched;
+	this.op_AND = function() {
+		this.fetch();
+		this.a = this.a & this._fetched;
 		SetFlag(Z, a == 0x00);
 		SetFlag(N, a & 0x80);
 		return 1;
@@ -914,7 +871,7 @@ window.CPU = function CPU(bus) {
 		SetFlag(C, (temp & 0xFF00) > 0);
 		SetFlag(Z, (temp & 0x00FF) == 0x00);
 		SetFlag(N, temp & 0x80);
-		if (lookup[opcode].addrmode == & olc6502:: IMP)
+		if (lookup[this._opcode ].addrmode == & olc6502:: IMP)
 		a = temp & 0x00FF;
 	else
 		write(addr_abs, temp & 0x00FF);
@@ -1325,7 +1282,7 @@ window.CPU = function CPU(bus) {
 		temp = fetched >> 1;
 		SetFlag(Z, (temp & 0x00FF) == 0x0000);
 		SetFlag(N, temp & 0x0080);
-		if (lookup[opcode].addrmode == & olc6502:: IMP)
+		if (lookup[this._opcode].addrmode == & olc6502:: IMP)
 		a = temp & 0x00FF;
 	else
 		write(addr_abs, temp & 0x00FF);
@@ -1338,7 +1295,7 @@ window.CPU = function CPU(bus) {
 		// based on https://wiki.nesdev.com/w/index.php/CPU_unofficial_opcodes
 		// and will add more based on game compatibility, and ultimately
 		// I'd like to cover all illegal opcodes too
-		switch (opcode) {
+		switch (this._opcode) {
 			case 0x1C:
 			case 0x3C:
 			case 0x5C:
@@ -1418,7 +1375,7 @@ window.CPU = function CPU(bus) {
 		SetFlag(C, temp & 0xFF00);
 		SetFlag(Z, (temp & 0x00FF) == 0x0000);
 		SetFlag(N, temp & 0x0080);
-		if (lookup[opcode].addrmode == & olc6502:: IMP)
+		if (lookup[this._opcode].addrmode == & olc6502:: IMP)
 		a = temp & 0x00FF;
 	else
 		write(addr_abs, temp & 0x00FF);
@@ -1432,7 +1389,7 @@ window.CPU = function CPU(bus) {
 		SetFlag(C, fetched & 0x01);
 		SetFlag(Z, (temp & 0x00FF) == 0x00);
 		SetFlag(N, temp & 0x0080);
-		if (lookup[opcode].addrmode == & olc6502:: IMP)
+		if (lookup[this._opcode].addrmode == & olc6502:: IMP)
 		a = temp & 0x00FF;
 	else
 		write(addr_abs, temp & 0x00FF);
@@ -1597,9 +1554,6 @@ window.CPU = function CPU(bus) {
 	}
 
 
-
-
-
 	///////////////////////////////////////////////////////////////////////////////
 	// HELPER FUNCTIONS
 
@@ -1607,28 +1561,18 @@ window.CPU = function CPU(bus) {
 	{
 		return cycles == 0;
 	}
+*/
 
 	// This is the disassembly function. Its workings are not required for emulation.
 	// It is merely a convenience function to turn the binary instruction code into
 	// human readable form. Its included as part of the emulator because it can take
 	// advantage of many of the CPUs internal ops to do this.
-	std:: map < uint16_t, std:: string > olc6502:: disassemble(uint16_t nStart, uint16_t nStop)
+	disassemble : function(nStart, nStop)
 	{
-		uint32_t addr = nStart;
-		uint8_t value = 0x00, lo = 0x00, hi = 0x00;
-		std:: map < uint16_t, std:: string > mapLines;
-		uint16_t line_addr = 0;
-
-		// A convenient utility to convert variables into
-		// hex strings because "modern C++"'s method with 
-		// streams is atrocious
-		auto hex = [](uint32_t n, uint8_t d)
-		{
-			std:: string s(d, '0');
-			for (int i = d - 1; i >= 0; i-- , n >>= 4)
-			s[i] = "0123456789ABCDEF"[n & 0xF];
-			return s;
-		};
+		let addr = nStart;
+		let value = 0x00, lo = 0x00, hi = 0x00;
+		let mapLines = [];
+		//let line_addr = 0;
 
 		// Starting at the specified address we read an instruction
 		// byte, which in turn yields information from the lookup table
@@ -1638,98 +1582,97 @@ window.CPU = function CPU(bus) {
 
 		// As the instruction is decoded, a std::string is assembled
 		// with the readable output
-		while (addr <= (uint32_t)nStop)
+		while (addr <= nStop)
 		{
-			line_addr = addr;
-
+			//line_addr = addr;
+			//this = window.CPU;
 			// Prefix line with instruction address
-			std:: string sInst = "$" + hex(addr, 4) + ": ";
+			let sInst = toHex(addr, 4) + ": ";
 
 			// Read instruction, and get its readable name
-			uint8_t opcode = bus -> read(addr, true); addr++;
-			sInst += lookup[opcode].name + " ";
+			let opcode = this._bus.cpuRead(addr++, true);
+			sInst += this.lookup[opcode].name + " ";
 
 			// Get oprands from desired locations, and form the
 			// instruction based upon its addressing mode. These
 			// routines mimmick the actual fetch routine of the
 			// 6502 in order to get accurate data as part of the
 			// instruction
-			if (lookup[opcode].addrmode == & olc6502:: IMP)
+			if (this.lookup[opcode].addrmode === this.adr_IMP)
 			{
 				sInst += " {IMP}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: IMM)
+			else if (this.lookup[opcode].addrmode === this.adr_IMM)
 			{
-				value = bus -> read(addr, true); addr++;
-				sInst += "#$" + hex(value, 2) + " {IMM}";
+				value = bus.read(addr, true); addr++;
+				sInst += "#$" + toHex(value, 2) + " {IMM}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: ZP0)
+			else if (this.lookup[opcode].addrmode === this.adr_ZP0)
 			{
-				lo = bus -> read(addr, true); addr++;
+				lo = bus.read(addr, true); addr++;
 				hi = 0x00;
-				sInst += "$" + hex(lo, 2) + " {ZP0}";
+				sInst += "$" + toHex(lo, 2) + " {ZP0}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: ZPX)
+			else if (this.lookup[opcode].addrmode  === this.adr_ZPX)
 			{
-				lo = bus -> read(addr, true); addr++;
+				lo = bus.read(addr, true); addr++;
 				hi = 0x00;
-				sInst += "$" + hex(lo, 2) + ", X {ZPX}";
+				sInst += "$" + toHex(lo, 2) + ", X {ZPX}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: ZPY)
+			else if (this.lookup[opcode].addrmode  === this.adr_ZPY)
 			{
-				lo = bus -> read(addr, true); addr++;
+				lo = bus.read(addr, true); addr++;
 				hi = 0x00;
-				sInst += "$" + hex(lo, 2) + ", Y {ZPY}";
+				sInst += "$" + toHex(lo, 2) + ", Y {ZPY}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: IZX)
+			else if (this.lookup[opcode].addrmode  === this.adr_IZX)
 			{
-				lo = bus -> read(addr, true); addr++;
+				lo = bus.read(addr, true); addr++;
 				hi = 0x00;
-				sInst += "($" + hex(lo, 2) + ", X) {IZX}";
+				sInst += "($" + toHex(lo, 2) + ", X) {IZX}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: IZY)
+			else if (this.lookup[opcode].addrmode  === this.adr_IZY)
 			{
-				lo = bus -> read(addr, true); addr++;
+				lo = bus.read(addr, true); addr++;
 				hi = 0x00;
-				sInst += "($" + hex(lo, 2) + "), Y {IZY}";
+				sInst += "($" + toHex(lo, 2) + "), Y {IZY}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: ABS)
+			else if (this.lookup[opcode].addrmode  === this.adr_ABS)
 			{
-				lo = bus -> read(addr, true); addr++;
-				hi = bus -> read(addr, true); addr++;
-				sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + " {ABS}";
+				lo = bus.read(addr, true); addr++;
+				hi = bus.read(addr, true); addr++;
+				sInst += "$" + toHex((hi << 8) | lo, 4) + " {ABS}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: ABX)
+			else if (this.lookup[opcode].addrmode  === this.adr_ABX)
 			{
-				lo = bus -> read(addr, true); addr++;
-				hi = bus -> read(addr, true); addr++;
-				sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + ", X {ABX}";
+				lo = bus.read(addr, true); addr++;
+				hi = bus.read(addr, true); addr++;
+				sInst += "$" + toHex((hi << 8) | lo, 4) + ", X {ABX}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: ABY)
+			else if (this.lookup[opcode].addrmode  === this.adr_ABY)
 			{
-				lo = bus -> read(addr, true); addr++;
-				hi = bus -> read(addr, true); addr++;
-				sInst += "$" + hex((uint16_t)(hi << 8) | lo, 4) + ", Y {ABY}";
+				lo = bus.read(addr, true); ;
+				hi = bus.read(addr, true); addr++;
+				sInst += "$" + toHex((uint16_t)(hi << 8) | lo, 4) + ", Y {ABY}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: IND)
+			else if (this.lookup[opcode].addrmode  === this.adr_IND)
 			{
-				lo = bus -> read(addr, true); addr++;
-				hi = bus -> read(addr, true); addr++;
-				sInst += "($" + hex((uint16_t)(hi << 8) | lo, 4) + ") {IND}";
+				lo = bus.read(addr++, true); 
+				hi = bus.read(addr++, true);
+				sInst += "($" + toHex((uint16_t)(hi << 8) | lo, 4) + ") {IND}";
 			}
-		else if (lookup[opcode].addrmode == & olc6502:: REL)
+			else if (this.lookup[opcode].addrmode  === this.adr_REL)
 			{
-				value = bus -> read(addr, true); addr++;
-				sInst += "$" + hex(value, 2) + " [$" + hex(addr + value, 4) + "] {REL}";
+				value = bus.read(addr++, true);
+				sInst += "$" + toHex(value, 2) + " [$" + hex(addr + value, 4) + "] {REL}";
 			}
 
 			// Add the formed string to a std::map, using the instruction's
 			// address as the key. This makes it convenient to look for later
 			// as the instructions are variable in length, so a straight up
 			// incremental index is not sufficient.
-			mapLines[line_addr] = sInst;
+			mapLines.push(sInst);
 		}
-
 		return mapLines;
-	*/
+	}
 };

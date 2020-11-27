@@ -1,10 +1,13 @@
-﻿"use strict";
+﻿
 window.Cartridge = function Cartridge() {
-
+    "use strict";
     this._reader = new FileReader();
     this._programBanks = null;
     this._chrBanks = null;
     this._hasTrainer = false;
+    this._mirror = 0;
+    this._mapperID = null;
+    var _this = this;
 
     // char name[4]; // This is a hardcoded file format name.
     // uint8_t prg_rom_chunks; // Sized in bytes x 16384
@@ -18,8 +21,10 @@ window.Cartridge = function Cartridge() {
     this.header = null;
     this.isValidRom = false;
 
-    // Load c cartridge into the NES
+    // Load a cartridge into the NES
     this.load = function (f) {
+        
+        
 
         this._reader.readAsArrayBuffer(f);
 
@@ -27,24 +32,39 @@ window.Cartridge = function Cartridge() {
             let buffer = e.target.result;
 
             console.log(`Read ${buffer.byteLength} from ROM file`);
-            this.header = new Uint8Array(buffer.slice(0, 16));
-            this.isValidRom = (this.header[0] === 78 && this.header[1] === 69 && this.header[2] === 83 && this.header[3] === 26) ? true : false;
+            _this.header = new Uint8Array(buffer.slice(0, 16));
+            _this.isValidRom = (_this.header[0] === 78 && _this.header[1] === 69 && _this.header[2] === 83 && _this.header[3] === 26) ? true : false;
+            
+            if (_this.isValidRom) {
+                
+                // If a "trainer" exists we just need to read past it before we get to the good stuff
+                _this._hasTrainer = new Boolean(_this.header[6] & 0x04);   
+                let dataOffset = 16; // Offset Header
+                dataOffset += _this._hasTrainer === true ? 512 : 0;
+    
 
-            // If a "trainer" exists we just need to read past it before we get to the good stuff
-            this._hasTrainer = new Boolean(this.header[6] & 0x04);   
-            let dataOffset = 16; // Offset Header
-            dataOffset += this._hasTrainer === true ? 512 : 0;
+                _this._mirror  = (_this.header[6] & 0x01) ? "VERTICAL" : "HORIZONTAL";
+                _this._mapperID = ((_this.header[7] >> 4) << 4) | (_this.header[6] >> 4);
 
-            // Read program banks
-            let programBankSize = this.header[4] * 16384;
-            this._programBanks = new Uint8Array(buffer.slice(dataOffset, programBankSize + dataOffset));
+                // Read program banks
+                let programBankSize = _this.header[4] * 16384;
+                _this._programBanks = new Uint8Array(buffer.slice(dataOffset, programBankSize + dataOffset));
+    
+                // Read chr banks.
+                dataOffset += programBankSize;
+                let chrBankSize = _this.header[5] * 8192;
+                _this._chrBanks = new Uint8Array(buffer.slice(dataOffset, chrBankSize + dataOffset));
 
-            // Read chr banks.
-            dataOffset += programBankSize;
-            let chrBankSize = this.header[5] * 8192;
-            this._chrBanks = new Uint8Array(buffer.slice(dataOffset, chrBankSize + dataOffset));
 
-        };
+                // Debug
+                window.CPU.reset();
+
+                /*switch (this._mapperID) {
+                    case 0: pMapper = std::make_shared<Mapper_000>(nPRGBanks, nCHRBanks); break;
+                    }
+                
+                    }
+                }; */
 
         // TODO: Add other handlers .
         // fr.onerror = errorHandler;
@@ -52,7 +72,28 @@ window.Cartridge = function Cartridge() {
         // fr.onloadstart = () => changeStatus('Start Loading');
         // fr.onload = () => { changeStatus('Loaded') };
 
+            }
+        }
+    }
 
+    this.cpuRead = function (addr) {
+      
+       return this._programBanks[addr];
+        /*
+        if (pMapper.cpuMapRead(addr, mapped_addr))
+        {
+            data = vPRGMemory[mapped_addr];
+            return true;
+        }
+        else
+            return false;
+            */
+    }
+
+    this.cpuWrite = function (address, value) {
+        if (address > 0xFFFF) {
+            this._programBanks[address] = value;
+        }
     }
 }
     
