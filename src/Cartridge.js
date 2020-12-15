@@ -1,13 +1,12 @@
 ﻿
-window.Cartridge = function Cartridge() {
-    "use strict";
-    this._reader = new FileReader();
-    this._programBanks = null;
-    this._chrBanks = null;
-    this._hasTrainer = false;
-    this._mirror = 0;
-    this._mapperID = null;
-    var _this = this;
+window.Cartridge = {
+    //"use strict";
+    _reader : new FileReader(),
+    _programBanks : null,
+    _chrBanks : null,
+    _hasTrainer : false,
+    _mirror : 0,
+    _mapperID : null,
 
     // char name[4]; // This is a hardcoded file format name.
     // uint8_t prg_rom_chunks; // Sized in bytes x 16384
@@ -18,16 +17,15 @@ window.Cartridge = function Cartridge() {
     // uint8_t tv_system1;
     // uint8_t tv_system2;
     // char unused[5];
-    this.header = null;
-    this.isValidRom = false;
+    header : null,
+    isValidRom : false,
 
     // Load a cartridge into the NES
-    this.load = function (f) {
+    load : function (f) {
         
-        
-
         this._reader.readAsArrayBuffer(f);
 
+        let _this = this;
         this._reader.onloadend = function (e) {
             let buffer = e.target.result;
 
@@ -46,10 +44,16 @@ window.Cartridge = function Cartridge() {
                 _this._mirror  = (_this.header[6] & 0x01) ? "VERTICAL" : "HORIZONTAL";
                 _this._mapperID = ((_this.header[7] >> 4) << 4) | (_this.header[6] >> 4);
 
+                // FIXME
+                window.mapper_000.nPRGBanks = _this.header[4];
+
                 // Read program banks
                 let programBankSize = _this.header[4] * 16384;
                 _this._programBanks = new Uint8Array(buffer.slice(dataOffset, programBankSize + dataOffset));
     
+
+                window.mapper_000.nCHRBanks = _this.header[5];
+
                 // Read chr banks.
                 dataOffset += programBankSize;
                 let chrBankSize = _this.header[5] * 8192;
@@ -74,26 +78,19 @@ window.Cartridge = function Cartridge() {
 
             }
         }
-    }
+    },
 
-    this.cpuRead = function (addr) {
-      
-       return this._programBanks[addr];
-        /*
-        if (pMapper.cpuMapRead(addr, mapped_addr))
-        {
-            data = vPRGMemory[mapped_addr];
-            return true;
-        }
-        else
-            return false;
-            */
-    }
+    cpuRead : function (addr) {
+        let mapped_addr = window.mapper_000.cpuMapRead(addr);
+        return mapped_addr !== false ? this._programBanks[mapped_addr] : false;           
+    },
 
-    this.cpuWrite = function (address, value) {
+    cpuWrite : function (address, value) {
         if (address > 0xFFFF) {
             this._programBanks[address] = value;
+            return true;
         }
+        return false;
+
     }
 }
-    

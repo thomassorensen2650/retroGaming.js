@@ -3,80 +3,94 @@
 <head>
     <meta charset="utf-8" />
     <title>Emulator</title>
+    <script src="Mapper_000.js" type="text/javascript"></script>
     <script src="CPU.js" type="text/javascript"></script>
     <script src="bus.js" type="text/javascript"></script>
     <script src="Cartridge.js" type="text/javascript"></script>
 
     <link rel="stylesheet" href="style.css">
-    <script>window.toHex = function(number, size) {
+    <script>
+    window.toHex = function(number, size) {
             let hex = number.toString(16).toUpperCase();
             while (hex.length < size) {
                 hex = "0" + hex;
             }
             return "0x" + hex;
+    ;}
+    window.toBin = function(number) {
+        let bin = number.toString(2);
+        while (bin.length < 8) {
+            bin = "0" + bin;
         }
-        window.toBin = function(number) {
-            let bin = number.toString(2);
-            while (bin.length < 8) {
-                bin = "0" + bin;
+        return bin;
+    }
+
+    let addRow = function(op) {
+            if (op.address === toHex(cpu.pc)){
+                return `<tr class="highlight"><td>${op.address}</td><td>${op.op}</td><td>${op.addrMode}</td></tr>`;
+            } else {
+                return `<tr><td>${op.address}</td><td>${op.op}</td><td>${op.addrMode}</td></tr>`
             }
-            return bin;
+        };
+    var cartridge = window.Cartridge;
+
+    let bus = new window.Bus(cartridge);
+    let cpu = window.CPU;//new window.CPU(bus);
+    step = function() {
+        do {
+            cpu.clock();
         }
-       
-        // print Program from program counter - 5 to +10
-
-
-
-        var cartridge = new window.Cartridge();
-
-        //
-
-        //this.stkp = 0;   // Stack pointer
-        //this.status = 0; // Status register
-        //this.pc = 0 // Program Counter
-
-
-
-        let bus = new window.Bus(cartridge);
-        let cpu = window.CPU;//new window.CPU(bus);
+        while (cpu._cycles > 0)
+        
+    };
+    loadRom = function() {
+        console.log("Loading ROM");
+        window.cartridge.load(document.querySelector('input[type=file]').files[0]);
+        //window.asm = cpu.disassemble(0x0000, 0xFFFF);
+    };
 
         cpu.connectBus(bus);
-      
+        cpu.propertyListener = function(property,value) {
+            switch(property) {
+                case "a":
+                    document.getElementById("reg_a_h").innerHTML = toHex(cpu.a, 2);
+                    document.getElementById("reg_a_b").innerHTML = toBin(cpu.a);
+                    break;
+                case "x":
+                    document.getElementById("reg_x_h").innerHTML = toHex(cpu.x, 2);
+                    document.getElementById("reg_x_b").innerHTML = toBin(cpu.x);
+                    break;
+                case "y":
+                    document.getElementById("reg_y_h").innerHTML = toHex(cpu.y, 2);
+                    document.getElementById("reg_y_b").innerHTML = toBin(cpu.y);
+                    break;
+                case "stkp":
+                    document.getElementById("stkp_h").innerHTML = toHex(cpu.stkp, 4);
+                    document.getElementById("stkp_b").innerHTML = toBin(cpu.stkp);
+                    break;
+                case "status":
+                    document.getElementById("status_h").innerHTML = toHex(cpu.status, 2);
+                    document.getElementById("status_b").innerHTML = toBin(cpu.status);
+                    break;
+                case "pc":
+                    document.getElementById("pc_h").innerHTML = toHex(cpu.pc, 4);
+                    document.getElementById("pc_b").innerHTML = toBin(cpu.pc);
 
-        //cpu.reset();
-        //console.log(cpu.stkp);
+                    /* FIXME : This performance is bad, only for testing.
+                    if (window.asm === undefined) {
+                        window.asm = cpu.disassemble(0x0000, 0xFFFF);
+                    } */
 
+                    // window.asm.slice(cpu.pc-1, cpu.pc+9)
+                    document.getElementById("disassembleTableBody").innerHTML = cpu.disassemble(cpu.pc, cpu.pc+10)
+                .map(x => addRow(x)).join('');
 
-        //cpu.reset();
-        console.log("test");
-        let x = 0;
-        console.log(x++);
-        console.log(x++);
-        console.log(++x);
-        setInterval(function () {
-            document.getElementById("reg_a_h").innerHTML = toHex(cpu.a, 2);
-            document.getElementById("reg_x_h").innerHTML = toHex(cpu.x, 2);
-            document.getElementById("reg_y_h").innerHTML = toHex(cpu.y, 2);
-            document.getElementById("stkp_h").innerHTML = toHex(cpu.stkp, 4);
-            document.getElementById("status_h").innerHTML = toHex(cpu.status, 2);
-            document.getElementById("pc_h").innerHTML = toHex(cpu.pc, 2);
-
-            document.getElementById("reg_a_b").innerHTML = toBin(cpu.a);
-            document.getElementById("reg_x_b").innerHTML = toBin(cpu.x);
-            document.getElementById("reg_y_b").innerHTML = toBin(cpu.y);
-            document.getElementById("stkp_b").innerHTML = toBin(cpu.stkp);
-            document.getElementById("status_b").innerHTML = toBin(cpu.status);
-            document.getElementById("pc_b").innerHTML = toBin(cpu.pc);
-
-
-            // Print Program
-            if (cartridge.isValidRom && cpu.pc > 0) {
-                var program = cpu.disassemble(cpu.pc -5, cpu.pc + 10); 
-                console.log(program);
+                    break;
+                default:
+                    console.log("Unknown Property " + property)
             }
-
-
-        }, 500);
+        }
+   
     </script>
 </head>
 <body>
@@ -119,10 +133,23 @@
                 </tbody>
             </table>
         </div>
+        <h1>disassembler</h1>
         <div id="commands">
-            <button onclick="cpu.reset()">Reset</button>
-            <input type="file" onchange="cartridge.load(document.querySelector('input[type=file]').files[0])"/>
-</div>
+            <button class="cmdButton" onclick="step()">Step</button>
+           <!-- <button class="cmdButton" onclick="cpu.reset()">Goto PC</button> --> 
+        </div>
+        <div id="disassemble">
+            <table id="disassembleTable">
+                <thead><tr><td></td><td></td><td></td><td></td></tr></thead>
+                <tbody id="disassembleTableBody"></tbody>
+                </table>
+        </div>
+        <h1>NES Commands</h1>
+        <div id="commands">
+            <button class="cmdButton" onclick="cpu.reset()">Reset</button>
+            <button class="cmdButton" onclick="document.getElementById('loadRom').click()">Load Game</button>  
+            <input type="file" id="loadRom" style="display:none" onchange="loadRom()"/>
+        </div>
     </div>
     <canvas id="gameCanvas" />
 </body>

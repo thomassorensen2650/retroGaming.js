@@ -10,32 +10,29 @@ window.Bus = function Bus(cartridge) {
         this._cpuRam.push(0);
     }
 
-    this.cpuRead = function (addr) {
+    this.cpuRead = function (addr, readOnly) {
 
-        return this._cartridge.cpuRead(addr);
-        if (this._cartridge.cpuRead(addr))
+        //console.log("CPU Read address " + addr);
+        let cartData = this._cartridge.cpuRead(addr);
+        if (cartData !== false)
         {
-            // Cartridge Address Range
+            return cartData;
         }
         else if (addr >= 0x0000 && addr <= 0x1FFF)
         {
             // System RAM Address Range, mirrored every 2048
-            data = this._cpuRam[addr & 0x07FF];
+            return this._cpuRam[addr & 0x07FF];
         }
         else if (addr >= 0x2000 && addr <= 0x3FFF)
         {
+            return 0; // fixme
             // PPU Address range, mirrored every 8
-            data = ppu.cpuRead(addr & 0x0007, bReadOnly);
+            //return this.ppu.cpuRead(addr & 0x0007, bReadOnly);
         }
-
-        return data;
-
-
-       
-        return 0x0;
     }
 
-    this.cpuWrite = function (address, value) {
+    this.cpuWrite = function (addr, data) {
+        console.log("CPU Write address " + addr + " data: " + data);
         if (this._cartridge.cpuWrite(addr, data))
         {
             // The cartridge "sees all" and has the facility to veto
@@ -61,7 +58,7 @@ window.Bus = function Bus(cartridge) {
             // and these are repeated throughout this range. We can
             // use bitwise AND operation to mask the bottom 3 bits, 
             // which is the equivalent of addr % 8.
-            ppu.cpuWrite(addr & 0x0007, data);
+           // ppu.cpuWrite(addr & 0x0007, data);
         }	
     }
 }

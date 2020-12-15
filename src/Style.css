@@ -10,6 +10,19 @@ body {
     height: 100%;
 }
 
+.highlight td {
+    background-color: rgb(54, 58, 58);
+    border: 1px solid green;
+}
+
+
+.cmdButton {
+    border: 1px solid #1FC742;
+    background-color: black;
+    color: #1FC742;
+    padding: 5px;
+    margin: 2px;
+}
 #debugWindow {
     background-color: black;
     color: #1FC742;
@@ -34,7 +47,10 @@ body {
     padding: 5px;
 }
 
-
+#disassembleTable {
+    width: 100%;
+    padding: 5px;
+}
 
 #gameCanvas {
     background-color: #686868;
