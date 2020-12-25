@@ -7,7 +7,7 @@ window.Cartridge = {
     _hasTrainer : false,
     _mirror : 0,
     _mapperID : null,
-
+    _mapper : window.mapper_000,
     // char name[4]; // This is a hardcoded file format name.
     // uint8_t prg_rom_chunks; // Sized in bytes x 16384
     // uint8_t chr_rom_chunks; // Sized in bytes x 8192
@@ -92,5 +92,27 @@ window.Cartridge = {
         }
         return false;
 
+    },
+
+    ppuRead : function(addr) {
+	    let mapped_addr = this._mapper.ppuMapRead(addr);
+        if (mapped_addr !== false) {
+            return this._chrBanks[mapped_addr];
+        }
+        else
+            return false;
+    },
+
+    ppuWrite : function(addr, data)
+    {
+        let mapped_addr = 0;
+        if (this._mapper.ppuMapWrite(addr, mapped_addr))
+        {
+            this._chrBanks[mapped_addr] = data;
+            return true;
+        }
+        else
+            return false;
     }
+
 }

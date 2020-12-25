@@ -1,11 +1,15 @@
 ﻿"use strict";
 
 // The bus is the NES.
-window.Bus = function Bus(cartridge) {
+window.Bus = function Bus(cartridge, cpu, ppu) {
 
     this._cartridge = cartridge;
     this._cpuRam = new Array();
+    this._systemClockCounter = 0;
+    this._cpu = cpu;
 
+    this._ppu = ppu;
+    this._ppu.connectCartridge(this._cartridge);
     for (let i = 0; i < 0xFFFF; i++) {
         this._cpuRam.push(0);
     }
@@ -61,4 +65,60 @@ window.Bus = function Bus(cartridge) {
            // ppu.cpuWrite(addr & 0x0007, data);
         }	
     }
+
+    
+    this.clock = function() {
+        // Clocking. The heart and soul of an emulator. The running
+        // frequency is controlled by whatever calls this function.
+        // So here we "divide" the clock as necessary and call
+        // the peripheral devices clock() function at the correct
+        // times.
+
+        // The fastest clock frequency the digital system cares
+        // about is equivalent to the PPU clock. So the PPU is clocked
+        // each time this function is called.
+        this._ppu.clock();
+
+        // The CPU runs 3 times slower than the PPU so we only call its
+        // clock() function every 3 times this function is called. We
+        // have a global counter to keep track of this.
+        if (this._systemClockCounter % 3 == 0)
+        {
+            this._cpu.clock();
+        }
+
+        // The PPU is capable of emitting an interrupt to indicate the
+        // vertical blanking period has been entered. If it has, we need
+        // to send that irq to the CPU.
+        if (this._ppu.nmi)
+        {
+            this._ppu.nmi = false;
+            this._cpu.nmi();
+        }
+
+        this._systemClockCounter++;
+    },
+
+    this.drawPatternTable = function(canvas) {
+        let pt = this._ppu.getPatternTable(1,1);
+        var ctx = canvas.getContext('2d');
+
+        var id = ctx.createImageData(255, 255); // only do this once per page
+        var d  = id.data; 
+
+        for (let i = 0; i < pt.length; i++) {
+            d[i*4+0] = pt[i].c.r;
+            d[i*4+1] = pt[i].c.g;
+            d[i*4+2] = pt[i].c.b;
+            d[i*4+3] = 1;
+        }
+        ctx.putImageData(id, 0, 0 );     
+
+        
+    },
+    this.loadCartridge = function(cartridgeBuffer) {
+        this._cartridge.load(cartridgeBuffer);
+        
+    }
+
 }

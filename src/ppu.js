@@ -54,98 +54,196 @@
 	David Barr, aka javidx9, �OneLoneCoder 2019
 */
 
-window.ppu = {
+window.PPU = {
 
     /** Lookup table of all colors that the PPU can generate */
     palScreen : [
-        "#545454", // 0x00 RGB : 84, 84, 84
-        "#001E74", // 0x01 RGB : 0, 30, 116
-        "#081090", // 0x02 RGB : 8, 16, 144
-        "#300088", // 0x03 RGB : 48, 0, 136
-        "#440064", // 0x04 RGB : 68, 0, 100
-        "#5C0030", // 0x05 RGB : 92, 0, 48
-        "#540400", // 0x06 RGB : 84, 4, 0
-        "#3E1800", // 0x07 RGB : 60, 24, 0
-        "#202A00", // 0x08 RGB : 32, 42, 0
-        "#083A00", // 0x09 RGB : 8, 58, 0 
-        "#004000", // 0x0A RGB : 0, 64, 0
-        "#003C00", // 0x0B RGB : 0, 60, 0
-        "#00323C", // 0x0C RGB : 0, 50, 60
-        "#000000", // 0x0D RGB : 0, 0, 0
-        "#000000", // 0x0E RGB : 0, 0, 0
-        "#000000", // 0x0F RGB : 0, 0, 
+        { r: 84, g: 84, b: 84, hex: "#545454" }, // 0x00 RGB : 84, 84, 84
+        { r: 00, g: 30, b: 116, hex: "#001E74", }, // 0x01 RGB : 0, 30, 116
+        { r: 08, g: 16, b: 144, hex: "#081090", }, // 0x02 RGB : 8, 16, 144
+        { r: 48, g: 00, b: 136, hex: "#300088", }, // 0x03 RGB : 48, 0, 136
+        { r: 68, g: 00, b: 100, hex: "#440064", }, // 0x04 RGB : 68, 0, 100
+        { r: 92, g: 00, b: 48, hex: "#5C0030", }, // 0x05 RGB : 92, 0, 48
+        { r: 84, g: 04, b: 00, hex: "#540400", }, // 0x06 RGB : 84, 4, 0
+        { r: 60, g: 24, b: 00, hex: "#3E1800", }, // 0x07 RGB : 60, 24, 0
+        { r: 32, g: 42, b: 00, hex: "#202A00", }, // 0x08 RGB : 32, 42, 0
+        { r: 08, g: 58, b: 00, hex: "#083A00", }, // 0x09 RGB : 8, 58, 0 
+        { r: 00, g: 64, b: 00, hex: "#004000", }, // 0x0A RGB : 0, 64, 0
+        { r: 00, g: 60, b: 00, hex: "#003C00", }, // 0x0B RGB : 0, 60, 0
+        { r: 00, g: 50, b: 60, hex: "#00323C", }, // 0x0C RGB : 0, 50, 60
+        { r: 00, g: 00, b: 00, hex: "#000000", }, // 0x0D RGB : 0, 0, 0
+        { r: 00, g: 00, b: 00, hex: "#000000", }, // 0x0E RGB : 0, 0, 0
+        { r: 00, g: 00, b: 00, hex: "#000000", }, // 0x0F RGB : 0, 0, 
         
-        "#989698", // 0x10 RGB : 152, 150, 152
-        "#08B0C4", // 0x11 RGB : 8, 76, 196
-        "#3032EC", // 0x12 RGB : 48, 50, 236
-        "#5C1EE4", // 0x13 RGB : 92, 30, 228
-        "#8814B0", // 0x14 RGB : 136, 20, 176
-        "#A01464", // 0x15 RGB : 160, 20, 100
-        "#982220", // 0x16 RGB : 152, 34, 32
-        "#783C00", // 0x17 RGB : 120, 60, 0
-        "#545A00", // 0x18 RGB : 84, 90, 0
-        "#287200", // 0x19 RGB : 40, 114, 0
-        "#087C00", // 0x1A RGB : 8, 124, 0
-        "#007628", // 0x1B RGB : 0, 118, 40
-        "#006678", // 0x1C RGB : 0, 102, 120
-        "#000000", // 0x1D RGB : 0, 0, 0
-        "#000000", // 0x1E RGB : 0, 0, 0
-        "#000000", // 0x1F RGB : 0, 0, 0
+        { r: 152, g: 150, b: 152, hex: "#989698", }, // 0x10 RGB : 152, 150, 152
+        { r: 08,  g: 76,  b: 196, hex: "#08B0C4", }, // 0x11 RGB : 8, 76, 196
+        { r: 48,  g: 50,  b: 236, hex: "#3032EC", }, // 0x12 RGB : 48, 50, 236
+        { r: 92,  g: 30,  b: 228, hex: "#5C1EE4", }, // 0x13 RGB : 92, 30, 228
+        { r: 136, g: 20,  b: 176, hex: "#8814B0", }, // 0x14 RGB : 136, 20, 176
+        { r: 160, g: 20,  b: 100, hex: "#A01464", }, // 0x15 RGB : 160, 20, 100
+        { r: 152, g: 34,  b: 32, hex: "#982220", }, // 0x16 RGB : 152, 34, 32
+        { r: 120, g: 60,  b: 00, hex: "#783C00", }, // 0x17 RGB : 120, 60, 0
+        { r: 84,  g: 90,  b: 00, hex: "#545A00", }, // 0x18 RGB : 84, 90, 0
+        { r: 40,  g: 114, b: 00, hex: "#287200", }, // 0x19 RGB : 40, 114, 0
+        { r: 08,  g: 124, b: 00, hex: "#087C00", }, // 0x1A RGB : 8, 124, 0
+        { r: 00,  g: 118, b: 40, hex: "#007628", }, // 0x1B RGB : 0, 118, 40
+        { r: 00,  g: 102, b: 120, hex: "#006678", }, // 0x1C RGB : 0, 102, 120
+        { r: 00,  g: 00,  b: 00, hex: "#000000", }, // 0x1D RGB : 0, 0, 0
+        { r: 00,  g: 00,  b: 00, hex: "#000000", }, // 0x1E RGB : 0, 0, 0
+        { r: 00,  g: 00,  b: 00, hex: "#000000", }, // 0x1F RGB : 0, 0, 0
         
-        "#ECEEEC", // 0x20 RGB : 236, 238, 236
-        "#069AEC", // 0x21 RGB : 6, 154, 236
-        "#147CEC", // 0x22 RGB : 20, 124, 236
-        "#B062EC", // 0x23 RGB : 176, 98, 236
-        "#E454EC", // 0x24 RGB : 228, 84, 236
-        "#EC58B4", // 0x25 RGB : 236, 88, 180
-        "#EC6A64", // 0x26 RGB : 236, 106, 100
-        "#D48820", // 0x27 RGB : 212, 136, 32
-        "#A0AA00", // 0x28 RGB : 160, 170, 0
-        "#74C400", // 0x29 RGB : 116, 196, 0
-        "#4CD020", // 0x2A RGB : 76, 208, 32
-        "#38CC6C", // 0x2B RGB : 56, 204, 108
-        "#38B4CC", // 0x2C RGB : 56, 180, 204
-        "#3C3C3C", // 0x2D RGB : 60, 60, 60
-        "#000000", // 0x2E RGB : 0, 0, 0
-        "#000000", // 0x2F RGB : 0, 0, 0
+        { r: 236,  g: 236,  b: 236, hex: "#ECEEEC", }, // 0x20 RGB : 236, 238, 236
+        { r: 06,   g: 154,  b: 236, hex: "#069AEC", }, // 0x21 RGB : 6, 154, 236
+        { r: 20,   g: 124,  b: 236, hex: "#147CEC", }, // 0x22 RGB : 20, 124, 236
+        { r: 176,  g: 98,   b: 236, hex: "#B062EC", }, // 0x23 RGB : 176, 98, 236
+        { r: 228,  g: 84,   b: 236, hex: "#E454EC", }, // 0x24 RGB : 228, 84, 236
+        { r: 236,  g: 88,   b: 180, hex: "#EC58B4", }, // 0x25 RGB : 236, 88, 180
+        { r: 236,  g: 106,  b: 100, hex: "#EC6A64", }, // 0x26 RGB : 236, 106, 100
+        { r: 212,  g: 136,  b: 32,  hex: "#D48820", }, // 0x27 RGB : 212, 136, 32
+        { r: 160,  g: 170,  b: 0,   hex: "#A0AA00", }, // 0x28 RGB : 160, 170, 0
+        { r: 116,  g: 196,  b: 0,   hex: "#74C400", }, // 0x29 RGB : 116, 196, 0
+        { r: 76,   g: 208,  b: 32,  hex: "#4CD020", }, // 0x2A RGB : 76, 208, 32
+        { r: 56,   g: 204,  b: 108, hex: "#38CC6C", }, // 0x2B RGB : 56, 204, 108
+        { r: 56,   g: 180,  b: 204, hex: "#38B4CC", }, // 0x2C RGB : 56, 180, 204
+        { r: 60,   g: 60,   b: 60,  hex: "#3C3C3C", }, // 0x2D RGB : 60, 60, 60
+        { r: 0,    g: 00,   b: 0,   hex: "#000000", }, // 0x2E RGB : 0, 0, 0
+        { r: 0,    g: 00,   b: 0,   hex: "#000000", }, // 0x2F RGB : 0, 0, 0
 
-        "#ECEEEC", // 0x30 RGB : 236, 238, 236
-        "#A8CCEC", // 0x31 RGB : 168, 204, 236
-        "#BCBCEC", // 0x32 RGB : 188, 188, 236
-        "#D4B2EC", // 0x33 RGB : 212, 178, 236
-        "#ECAEEC", // 0x34 RGB : 236, 174, 236
-        "#ECAED4", // 0x35 RGB : 236, 174, 212
-        "#ECB4B0", // 0x36 RGB : 236, 180, 176
-        "#E4C490", // 0x37 RGB : 228, 196, 144
-        "#CCD278", // 0x38 RGB : 204, 210, 120
-        "#B4DE78", // 0x39 RGB : 180, 222, 120
-        "#A8E290", // 0x3A RGB : 168, 226, 144
-        "#98E2B4", // 0x3B RGB : 152, 226, 180
-        "#A0D6E4", // 0x3C RGB : 160, 214, 228
-        "#A0A2A0", // 0x3D RGB : 160, 162, 160
-        "#000000", // 0x3E RGB : 0, 0, 0
-        "#000000", // 0x3F RGB : 0, 0, 0
+        { r: 236, g: 238, b: 236, hex: "#ECEEEC", }, // 0x30 RGB : 236, 238, 236
+        { r: 168, g: 204, b: 236, hex: "#A8CCEC", }, // 0x31 RGB : 168, 204, 236
+        { r: 188, g: 188, b: 236, hex: "#BCBCEC", }, // 0x32 RGB : 188, 188, 236
+        { r: 212, g: 178, b: 236, hex: "#D4B2EC", }, // 0x33 RGB : 212, 178, 236
+        { r: 236, g: 174, b: 236, hex: "#ECAEEC", }, // 0x34 RGB : 236, 174, 236
+        { r: 236, g: 174, b: 212, hex: "#ECAED4", }, // 0x35 RGB : 236, 174, 212
+        { r: 236, g: 180, b: 176, hex: "#ECB4B0", }, // 0x36 RGB : 236, 180, 176
+        { r: 228, g: 196, b: 144, hex: "#E4C490", }, // 0x37 RGB : 228, 196, 144
+        { r: 204, g: 210, b: 120, hex: "#CCD278", }, // 0x38 RGB : 204, 210, 120
+        { r: 180, g: 222, b: 120, hex: "#B4DE78", }, // 0x39 RGB : 180, 222, 120
+        { r: 168, g: 226, b: 144, hex: "#A8E290", }, // 0x3A RGB : 168, 226, 144
+        { r: 52,  g: 226, b: 180, hex: "#98E2B4", }, // 0x3B RGB : 152, 226, 180
+        { r: 160, g: 214, b: 228, hex: "#A0D6E4", }, // 0x3C RGB : 160, 214, 228
+        { r: 160, g: 162, b: 160, hex: "#A0A2A0", }, // 0x3D RGB : 160, 162, 160
+        { r: 0,   g: 0,   b: 0,   hex: "#000000", }, // 0x3E RGB : 0, 0, 0
+        { r: 0,   g: 0,   b: 0,   hex: "#000000", }, // 0x3F RGB : 0, 0, 0
     ],
 
-    mask : {
-        grayscale : 1,
+    _bitToByte : function(bitArray) {
+        let byte = 0x0;
+
+        for (let i = bitArray.length; i != 0; i--) {
+            let v = bitArray[i];
+            let bit = 1 << i;
+            if (v) {
+                byte |= bit;
+            }
+            else {
+                byte &= ~bit;
+            }	
+          }
+        return byte;
+    },
+    _byteToBit : function(byte) {
+        bits = [];
+        for (let i = 0; i < 8; i++) {
+            bit = (byte & 1 << i) > 0 ? 1 : 0;
+            bits.push(bit);     
+        }
+        return bits;
+    },
+    
+
+    vram_addr :  {
+
+        coarse_x : 0, // Size 5
+        coarse_y : 0, // Size 5
+        nametable_x : 0, // Size 1
+        nametable_y : 0, // Size 1
+        fine_y : 0, // Size 3
+        unused : 0, // Size 1
+
+		reg : () => {
+            return coarse_x &
+                   coarse_y << 5 &
+                   nametable_x << 11 &
+                   nametable_y << 12 &
+                   fine_y << 15 &
+                   unused << 16;
+        }
+    },
+    
+    /**
+	 * The Mask Register
+	 * @type {number}
+	 */
+	_mask : [1,1,1,1,1,1,1,1],
+	set mask(newValue) { this._mask = this._byteToBit(newValue & 0xFF);  this.propertyListener("mask", newValue) },	
+    get mask() { return this._bitToByte(this._mask); },
+    /**
+     * Represent the MASK register bits
+     */
+    _mask_flags : {
+        grayscale : 0,
         render_background_left : 1,
-        render_sprites_left : 1,
-        render_background : 1,
-        render_sprites : 1,
-        enhance_red : 1,
-        enhance_green : 1,
-        enhance_blue : 1,
-    }
+        render_sprites_left : 2,
+        render_background : 3,
+        render_sprites : 4,
+        enhance_red : 5,
+        enhance_green : 6,
+        enhance_blue : 7,
+    },
+
+    tblPattern : new Array(2).fill(0).map(() => new Array(4096).fill(0)),
+    sprPatternTable : new Array(2).fill(0),
+
+    /**
+	 * The Control Register
+	 * @type {number}
+	 */
+	_control : [1,1,1,1,1,1,1,1],
+	set control(newValue) { this._control = this._byteToBit(newValue & 0xFF);  this.propertyListener("control", newValue) },	
+    get control() { return this._bitToByte(this._control); },
+    /**
+     * Represent the bits in the Control 
+     */
+    _control_flags : {
+        nametable_x : 0,
+		nametable_y : 1,
+		increment_mode : 2,
+		pattern_sprite : 3,
+		pattern_background : 4,
+		sprite_size : 5,
+		slave_mode : 6, // unused
+        enable_nmi : 7
+    },
+
 
     /**  Simply returns the current sprite holding the rendered screen */
     getScreen : function() {
-        return sprScreen;
+        return this.sprScreen;
+    },
+
+    /**
+     * This is a convenience function that takes a specified palette and pixel
+     * index and returns the appropriate screen colour.
+     * @param {number} palette the pallet number
+     * @param {number} pixel  the pixel number
+     * @returns {string} Hex color code
+     */
+    getColourFromPaletteRam : function(palette, pixel) {
+
+        // "0x3F00"       - Offset into PPU addressable range where palettes are stored
+        // "palette << 2" - Each palette is 4 bytes in size
+        // "pixel"        - Each pixel index is either 0, 1, 2 or 3
+        // "& 0x3F"       - Stops us reading beyond the bounds of the palScreen array
+        return this.palScreen[this.ppuRead(0x3F00 + (this.palette << 2) + this.pixel) & 0x3F];
+
+        // Note: We dont access tblPalette directly here, instead we know that ppuRead()
+        // will map the address onto the seperate small RAM attached to the PPU bus.
     },
 
     /**
      * This function draw the CHR ROM for a given pattern table into
-	 * an olc::Sprite, using a specified palette. Pattern tables consist
+	 * an object, using a specified palette. Pattern tables consist
 	 * of 16x16 "tiles or characters". It is independent of the running
 	 * emulation and using it does not change the systems state, though
 	 * it gets all the data it needs from the live system. Consequently,
@@ -164,109 +262,79 @@ window.ppu = {
      * @returns {object} Pattern Table
      */
     getPatternTable : function(i, palette) {
-	// This function draw the CHR ROM for a given pattern table into
-	// an olc::Sprite, using a specified palette. Pattern tables consist
-	// of 16x16 "tiles or characters". It is independent of the running
-	// emulation and using it does not change the systems state, though
-	// it gets all the data it needs from the live system. Consequently,
-	// if the game has not yet established palettes or mapped to relevant
-	// CHR ROM banks, the sprite may look empty. This approach permits a 
-	// "live" extraction of the pattern table exactly how the NES, and 
-	// ultimately the player would see it.
 
-	// A tile consists of 8x8 pixels. On the NES, pixels are 2 bits, which
-	// gives an index into 4 different colours of a specific palette. There
-	// are 8 palettes to choose from. Colour "0" in each palette is effectively
-	// considered transparent, as those locations in memory "mirror" the global
-	// background colour being used. This mechanics of this are shown in 
-	// detail in ppuRead() & ppuWrite()
+        // Characters on NES
+        // ~~~~~~~~~~~~~~~~~
+        // The NES stores characters using 2-bit pixels. These are not stored sequentially
+        // but in singular bit planes. For example:
+        //
+        // 2-Bit Pixels       LSB Bit Plane     MSB Bit Plane
+        // 0 0 0 0 0 0 0 0	  0 0 0 0 0 0 0 0   0 0 0 0 0 0 0 0
+        // 0 1 1 0 0 1 1 0	  0 1 1 0 0 1 1 0   0 0 0 0 0 0 0 0
+        // 0 1 2 0 0 2 1 0	  0 1 1 0 0 1 1 0   0 0 1 0 0 1 0 0
+        // 0 0 0 0 0 0 0 0 =  0 0 0 0 0 0 0 0 + 0 0 0 0 0 0 0 0
+        // 0 1 1 0 0 1 1 0	  0 1 1 0 0 1 1 0   0 0 0 0 0 0 0 0
+        // 0 0 1 1 1 1 0 0	  0 0 1 1 1 1 0 0   0 0 0 0 0 0 0 0
+        // 0 0 0 2 2 0 0 0	  0 0 0 1 1 0 0 0   0 0 0 1 1 0 0 0
+        // 0 0 0 0 0 0 0 0	  0 0 0 0 0 0 0 0   0 0 0 0 0 0 0 0
+        //
+        // The planes are stored as 8 bytes of LSB, followed by 8 bytes of MSB
 
-	// Characters on NES
-	// ~~~~~~~~~~~~~~~~~
-	// The NES stores characters using 2-bit pixels. These are not stored sequentially
-	// but in singular bit planes. For example:
-	//
- 	// 2-Bit Pixels       LSB Bit Plane     MSB Bit Plane
-	// 0 0 0 0 0 0 0 0	  0 0 0 0 0 0 0 0   0 0 0 0 0 0 0 0
-	// 0 1 1 0 0 1 1 0	  0 1 1 0 0 1 1 0   0 0 0 0 0 0 0 0
-	// 0 1 2 0 0 2 1 0	  0 1 1 0 0 1 1 0   0 0 1 0 0 1 0 0
-	// 0 0 0 0 0 0 0 0 =  0 0 0 0 0 0 0 0 + 0 0 0 0 0 0 0 0
-	// 0 1 1 0 0 1 1 0	  0 1 1 0 0 1 1 0   0 0 0 0 0 0 0 0
-	// 0 0 1 1 1 1 0 0	  0 0 1 1 1 1 0 0   0 0 0 0 0 0 0 0
-	// 0 0 0 2 2 0 0 0	  0 0 0 1 1 0 0 0   0 0 0 1 1 0 0 0
-	// 0 0 0 0 0 0 0 0	  0 0 0 0 0 0 0 0   0 0 0 0 0 0 0 0
-	//
-	// The planes are stored as 8 bytes of LSB, followed by 8 bytes of MSB
+        this.sprPatternTable[i] = [];
 
-	// Loop through all 16x16 tiles
-	for (let nTileY = 0; nTileY < 16; nTileY++) {
-		for (let nTileX = 0; nTileX < 16; nTileX++) {
-			// Convert the 2D tile coordinate into a 1D offset into the pattern
-			// table memory.
-			let nOffset = nTileY * 256 + nTileX * 16;
+        // Loop through all 16x16 tiles
+        for (let nTileY = 0; nTileY < 16; nTileY++) {
+            for (let nTileX = 0; nTileX < 16; nTileX++) {
+                // Convert the 2D tile coordinate into a 1D offset into the pattern
+                // table memory.
+                let nOffset = nTileY * 256 + nTileX * 16;
 
-			// Now loop through 8 rows of 8 pixels
-			for (let row = 0; row < 8; row++) {
-				// For each row, we need to read both bit planes of the character
-				// in order to extract the least significant and most significant 
-				// bits of the 2 bit pixel value. in the CHR ROM, each character
-				// is stored as 64 bits of lsb, followed by 64 bits of msb. This
-				// conveniently means that two corresponding rows are always 8
-				// bytes apart in memory.
-				let tile_lsb = this.ppuRead(i * 0x1000 + nOffset + row + 0x0000);
-				let tile_msb = this.ppuRead(i * 0x1000 + nOffset + row + 0x0008);
+                // Now loop through 8 rows of 8 pixels
+                for (let row = 0; row < 8; row++) {
+                    // For each row, we need to read both bit planes of the character
+                    // in order to extract the least significant and most significant 
+                    // bits of the 2 bit pixel value. in the CHR ROM, each character
+                    // is stored as 64 bits of lsb, followed by 64 bits of msb. This
+                    // conveniently means that two corresponding rows are always 8
+                    // bytes apart in memory.
+                    let tile_lsb = this.ppuRead(i * 0x1000 + nOffset + row + 0x0000);
+                    let tile_msb = this.ppuRead(i * 0x1000 + nOffset + row + 0x0008);
 
 
-				// Now we have a single row of the two bit planes for the character
-				// we need to iterate through the 8-bit words, combining them to give
-				// us the final pixel index
-				for (let col = 0; col < 8; col++) {
-					// We can get the index value by simply adding the bits together
-					// but we're only interested in the lsb of the row words because...
-					let pixel = (tile_msb & 0x01) << 1 | (tile_lsb & 0x01);
+                    // Now we have a single row of the two bit planes for the character
+                    // we need to iterate through the 8-bit words, combining them to give
+                    // us the final pixel index
+                    for (let col = 0; col < 8; col++) {
+                        // We can get the index value by simply adding the bits together
+                        // but we're only interested in the lsb of the row words because...
+                        let pixel = (tile_msb & 0x01) << 1 | (tile_lsb & 0x01);
 
-					// ...we will shift the row words 1 bit right for each column of
-					// the character.
-					tile_lsb >>= 1; tile_msb >>= 1;
+                        // ...we will shift the row words 1 bit right for each column of
+                        // the character.
+                        tile_lsb >>= 1; tile_msb >>= 1;
 
-					// Now we know the location and NES pixel value for a specific location
-					// in the pattern table, we can translate that to a screen colour, and an
-					// (x,y) location in the sprite
-					this.sprPatternTable[i].SetPixel
-					(
-						nTileX * 8 + (7 - col), // Because we are using the lsb of the row word first
-												// we are effectively reading the row from right
-												// to left, so we need to draw the row "backwards"
-						nTileY * 8 + row, 
-						this.GetColourFromPaletteRam(palette, pixel)
-					);
-				}
-			}
-		}
-	}
+                        // Now we know the location and NES pixel value for a specific location
+                        // in the pattern table, we can translate that to a screen colour, and an
+                        // (x,y) location in the sprite
+                        let _this = this;
+                        
+                        this.sprPatternTable[i].push( //.SetPixel
+                        {
+                            x : nTileX * 8 + (7 - col), // Because we are using the lsb of the row word first
+                                                    // we are effectively reading the row from right
+                                                    // to left, so we need to draw the row "backwards"
+                            y : nTileY * 8 + row, 
+                            c : _this.getColourFromPaletteRam(palette, pixel)
+                        });
+                    }
+                }
+            }
+        }
 
-	// Finally return the updated sprite representing the pattern table
-	return this.sprPatternTable[i];
+        // Finally return the updated sprite representing the pattern table
+        return this.sprPatternTable[i];
 },
 
-/**
- * This is a convenience function that takes a specified palette and pixel
- * index and returns the appropriate screen colour.
- * @param {number} palette the pallet number
- * @param {number} pixel  the pixel number
- * @returns {string} Hex color code
- */
-getColourFromPaletteRam : function(palette, pixel) {
-
-	// "0x3F00"       - Offset into PPU addressable range where palettes are stored
-	// "palette << 2" - Each palette is 4 bytes in size
-	// "pixel"        - Each pixel index is either 0, 1, 2 or 3
-	// "& 0x3F"       - Stops us reading beyond the bounds of the palScreen array
-	return this.palScreen[this.ppuRead(0x3F00 + (this.palette << 2) + this.pixel) & 0x3F];
-
-	// Note: We dont access tblPalette directly here, instead we know that ppuRead()
-	// will map the address onto the seperate small RAM attached to the PPU bus.
-},
 
 /**
  * 
@@ -293,10 +361,10 @@ cpuRead : function(addr, rdonly) {
 		// really only used in debug mode.
 		switch (addr) {
             case 0x0000: // Control
-                data = control.reg;
+                data = _bitToByte[this.reg_control];
                 break;
             case 0x0001: // Mask
-                data = this.mask.reg;
+                data = _bitToByte[this.reg_mask];
                 break;
             case 0x0002: // Status
                 data = status.reg;
@@ -380,12 +448,15 @@ cpuRead : function(addr, rdonly) {
 	}
 
 	return data;
-}
+},
 
-void olc2C02::cpuWrite(uint16_t addr, uint8_t data)
-{
-	switch (addr)
-	{
+/**
+ * 
+ * @param {Number} addr 
+ * @param {Number} data 
+ */
+cpuWrite(addr, data) {
+	switch (addr) {
 	case 0x0000: // Control
 		control.reg = data;
 		tram_addr.nametable_x = control.nametable_x;
@@ -403,8 +474,7 @@ void olc2C02::cpuWrite(uint16_t addr, uint8_t data)
 		pOAM[oam_addr] = data;
 		break;
 	case 0x0005: // Scroll
-		if (address_latch == 0)
-		{
+		if (address_latch == 0) {
 			// First write to scroll register contains X offset in pixel space
 			// which we split into coarse and fine x values
 			fine_x = data & 0x07;
@@ -451,29 +521,24 @@ void olc2C02::cpuWrite(uint16_t addr, uint8_t data)
 		vram_addr.reg += (control.increment_mode ? 32 : 1);
 		break;
 	}
-}
+},
 
-uint8_t olc2C02::ppuRead(uint16_t addr, bool rdonly)
-{
-	uint8_t data = 0x00;
+ppuRead : function(addr, rdonly) {
 	addr &= 0x3FFF;
 
-	if (cart->ppuRead(addr, data))
-	{
-
+    let data = this._cart.ppuRead(addr);
+	if (data === false) {
+        console.log("Hmm, crap");
 	}
-	else if (addr >= 0x0000 && addr <= 0x1FFF)
-	{
+	else if (addr >= 0x0000 && addr <= 0x1FFF) {
 		// If the cartridge cant map the address, have
 		// a physical location ready here
-		data = tblPattern[(addr & 0x1000) >> 12][addr & 0x0FFF];
+		data = this.tblPattern[(addr & 0x1000) >> 12][addr & 0x0FFF];
 	}
-	else if (addr >= 0x2000 && addr <= 0x3EFF)
-	{
+	else if (addr >= 0x2000 && addr <= 0x3EFF) {
 		addr &= 0x0FFF;
 
-		if (cart->Mirror() == MIRROR::VERTICAL)
-		{
+		if (this._cart.Mirror() ==  "VERTICAL") {
 			// Vertical
 			if (addr >= 0x0000 && addr <= 0x03FF)
 				data = tblName[0][addr & 0x03FF];
@@ -482,10 +547,9 @@ uint8_t olc2C02::ppuRead(uint16_t addr, bool rdonly)
 			if (addr >= 0x0800 && addr <= 0x0BFF)
 				data = tblName[0][addr & 0x03FF];
 			if (addr >= 0x0C00 && addr <= 0x0FFF)
-				data = tblName[1][addr & 0x03FF];
+				data = this.tblName[1][addr & 0x03FF];
 		}
-		else if (cart->Mirror() == MIRROR::HORIZONTAL)
-		{
+		else if (this._cart.Mirror() == "HORIZONTAL") {
 			// Horizontal
 			if (addr >= 0x0000 && addr <= 0x03FF)
 				data = tblName[0][addr & 0x03FF];
@@ -494,39 +558,32 @@ uint8_t olc2C02::ppuRead(uint16_t addr, bool rdonly)
 			if (addr >= 0x0800 && addr <= 0x0BFF)
 				data = tblName[1][addr & 0x03FF];
 			if (addr >= 0x0C00 && addr <= 0x0FFF)
-				data = tblName[1][addr & 0x03FF];
+				data = this.tblName[1][addr & 0x03FF];
 		}
 	}
-	else if (addr >= 0x3F00 && addr <= 0x3FFF)
-	{
+	else if (addr >= 0x3F00 && addr <= 0x3FFF) {
 		addr &= 0x001F;
 		if (addr == 0x0010) addr = 0x0000;
 		if (addr == 0x0014) addr = 0x0004;
 		if (addr == 0x0018) addr = 0x0008;
 		if (addr == 0x001C) addr = 0x000C;
-		data = tblPalette[addr] & (mask.grayscale ? 0x30 : 0x3F);
+		data = this.tblPalette[addr] & (this._mask[this._mask_flags.grayscale] ? 0x30 : 0x3F);
 	}
-
 	return data;
-}
+},
 
-void olc2C02::ppuWrite(uint16_t addr, uint8_t data)
-{
+ppuWrite : function(addr, data) {
 	addr &= 0x3FFF;
 
-	if (cart->ppuWrite(addr, data))
-	{
+	if (this._cart.ppuWrite(addr, data)){
 
 	}
-	else if (addr >= 0x0000 && addr <= 0x1FFF)
-	{
-		tblPattern[(addr & 0x1000) >> 12][addr & 0x0FFF] = data;
+	else if (addr >= 0x0000 && addr <= 0x1FFF) {
+		this.tblPattern[(addr & 0x1000) >> 12][addr & 0x0FFF] = data;
 	}
-	else if (addr >= 0x2000 && addr <= 0x3EFF)
-	{
+	else if (addr >= 0x2000 && addr <= 0x3EFF) {
 		addr &= 0x0FFF;
-		if (cart->Mirror() == MIRROR::VERTICAL)
-		{
+		if (this._cart.Mirror() == "VERTICAL") {
 			// Vertical
 			if (addr >= 0x0000 && addr <= 0x03FF)
 				tblName[0][addr & 0x03FF] = data;
@@ -537,8 +594,7 @@ void olc2C02::ppuWrite(uint16_t addr, uint8_t data)
 			if (addr >= 0x0C00 && addr <= 0x0FFF)
 				tblName[1][addr & 0x03FF] = data;
 		}
-		else if (cart->Mirror() == MIRROR::HORIZONTAL)
-		{
+		else if (this._cart.Mirror() == "HORIZONTAL") {
 			// Horizontal
 			if (addr >= 0x0000 && addr <= 0x03FF)
 				tblName[0][addr & 0x03FF] = data;
@@ -550,24 +606,21 @@ void olc2C02::ppuWrite(uint16_t addr, uint8_t data)
 				tblName[1][addr & 0x03FF] = data;
 		}
 	}
-	else if (addr >= 0x3F00 && addr <= 0x3FFF)
-	{
+	else if (addr >= 0x3F00 && addr <= 0x3FFF) {
 		addr &= 0x001F;
 		if (addr == 0x0010) addr = 0x0000;
 		if (addr == 0x0014) addr = 0x0004;
 		if (addr == 0x0018) addr = 0x0008;
 		if (addr == 0x001C) addr = 0x000C;
-		tblPalette[addr] = data;
+		this.tblPalette[addr] = data;
 	}
-}
+},
 
-void olc2C02::ConnectCartridge(const std::shared_ptr<Cartridge>& cartridge)
-{
-	this->cart = cartridge;
-}
+connectCartridge : function(cartridge) {
+	this._cart = cartridge;
+},
 
-void olc2C02::reset()
-{
+reset : function() {
 	fine_x = 0x00;
 	address_latch = 0x00;
 	ppu_data_buffer = 0x00;
@@ -588,10 +641,9 @@ void olc2C02::reset()
 	tram_addr.reg = 0x0000;
 	scanline_trigger = false;
 	odd_frame = false;
-}
+},
 
-void olc2C02::clock()
-{
+clock : function() {
 	// As we progress through scanlines and cycles, the PPU is effectively
 	// a state machine going through the motions of fetching background 
 	// information and sprite information, compositing them into a pixel
@@ -603,37 +655,32 @@ void olc2C02::clock()
 
 	// ==============================================================================
 	// Increment the background tile "pointer" one tile/column horizontally
-	auto IncrementScrollX = [&]()
-	{
+	let IncrementScrollX = function() {
 		// Note: pixel perfect scrolling horizontally is handled by the 
 		// data shifters. Here we are operating in the spatial domain of 
 		// tiles, 8x8 pixel blocks.
 		
 		// Ony if rendering is enabled
-		if (mask.render_background || mask.render_sprites)
-		{
+		if (this._mask[_mask_flags.render_background] || this._mask[_mask_flags.render_sprites]) {
 			// A single name table is 32x30 tiles. As we increment horizontally
 			// we may cross into a neighbouring nametable, or wrap around to
 			// a neighbouring nametable
-			if (vram_addr.coarse_x == 31)
-			{
+			if (this.vram_addr.coarse_x == 31) {
 				// Leaving nametable so wrap address round
-				vram_addr.coarse_x = 0;
+				this.vram_addr.coarse_x = 0;
 				// Flip target nametable bit
-				vram_addr.nametable_x = ~vram_addr.nametable_x;
+				this.vram_addr.nametable_x = ~this.vram_addr.nametable_x;
 			}
-			else
-			{
+			else {
 				// Staying in current nametable, so just increment
-				vram_addr.coarse_x++;
+				this.vram_addr.coarse_x++;
 			}
 		}
 	};
 
 	// ==============================================================================
 	// Increment the background tile "pointer" one scanline vertically
-	auto IncrementScrollY = [&]()
-	{
+	let IncrementScrollY = function() {
 		// Incrementing vertically is more complicated. The visible nametable
 		// is 32x30 tiles, but in memory there is enough room for 32x32 tiles.
 		// The bottom two rows of tiles are in fact not tiles at all, they
@@ -648,15 +695,12 @@ void olc2C02::clock()
 		// row offset, since fine_y is a value 0 to 7, and a row is 8 pixels high
 
 		// Ony if rendering is enabled
-		if (mask.render_background || mask.render_sprites)
-		{
+		if (this._mask[_mask_flags.render_background] || this._mask[_mask_flags.render_sprites]) {
 			// If possible, just increment the fine y offset
-			if (vram_addr.fine_y < 7)
-			{
-				vram_addr.fine_y++;
+			if (this.vram_addr.fine_y < 7) {
+				this.vram_addr.fine_y++;
 			}
-			else
-			{
+			else {
 				// If we have gone beyond the height of a row, we need to
 				// increment the row, potentially wrapping into neighbouring
 				// vertical nametables. Dont forget however, the bottom two rows
@@ -665,27 +709,24 @@ void olc2C02::clock()
 				// y offset is the specific "scanline"
 
 				// Reset fine y offset
-				vram_addr.fine_y = 0;
+				this.vram_addr.fine_y = 0;
 
 				// Check if we need to swap vertical nametable targets
-				if (vram_addr.coarse_y == 29)
-				{
+				if (this.vram_addr.coarse_y == 29) {
 					// We do, so reset coarse y offset
-					vram_addr.coarse_y = 0;
+					this.vram_addr.coarse_y = 0;
 					// And flip the target nametable bit
-					vram_addr.nametable_y = ~vram_addr.nametable_y;
+					this.vram_addr.nametable_y = ~this.vram_addr.nametable_y;
 				}
-				else if (vram_addr.coarse_y == 31)
-				{
+				else if (vram_addr.coarse_y == 31) {
 					// In case the pointer is in the attribute memory, we
 					// just wrap around the current nametable
-					vram_addr.coarse_y = 0;
+					this.vram_addr.coarse_y = 0;
 				}
-				else
-				{
+				else {
 					// None of the above boundary/wrapping conditions apply
 					// so just increment the coarse y offset
-					vram_addr.coarse_y++;
+					this.vram_addr.coarse_y++;
 				}
 			}
 		}
@@ -695,13 +736,12 @@ void olc2C02::clock()
 	// Transfer the temporarily stored horizontal nametable access information
 	// into the "pointer". Note that fine x scrolling is not part of the "pointer"
 	// addressing mechanism
-	auto TransferAddressX = [&]()
-	{
+	let TransferAddressX = function() {
 		// Ony if rendering is enabled
-		if (mask.render_background || mask.render_sprites)
+		if (this._mask[_mask_flags.render_background] || this._mask[_mask_flags.render_sprites])
 		{
-			vram_addr.nametable_x = tram_addr.nametable_x;
-			vram_addr.coarse_x    = tram_addr.coarse_x;
+			this.vram_addr.nametable_x = this.tram_addr.nametable_x;
+			this.vram_addr.coarse_x    = this.tram_addr.coarse_x;
 		}
 	};
 
@@ -709,14 +749,12 @@ void olc2C02::clock()
 	// Transfer the temporarily stored vertical nametable access information
 	// into the "pointer". Note that fine y scrolling is part of the "pointer"
 	// addressing mechanism
-	auto TransferAddressY = [&]()
-	{
+	let TransferAddressY = function() {
 		// Ony if rendering is enabled
-		if (mask.render_background || mask.render_sprites)
-		{
-			vram_addr.fine_y      = tram_addr.fine_y;
-			vram_addr.nametable_y = tram_addr.nametable_y;
-			vram_addr.coarse_y    = tram_addr.coarse_y;
+		if (this._mask[_mask_flags.render_background] || this._mask[_mask_flags.render_sprites]) {
+			this.vram_addr.fine_y      = this.tram_addr.fine_y;
+			this.vram_addr.nametable_y = this.tram_addr.nametable_y;
+			this.vram_addr.coarse_y    = this.tram_addr.coarse_y;
 		}
 	};
 
@@ -724,8 +762,7 @@ void olc2C02::clock()
 	// ==============================================================================
 	// Prime the "in-effect" background tile shifters ready for outputting next
 	// 8 pixels in scanline.
-	auto LoadBackgroundShifters = [&]()
-	{	
+	let LoadBackgroundShifters = function() {	
 		// Each PPU update we calculate one pixel. These shifters shift 1 bit along
 		// feeding the pixel compositor with the binary information it needs. Its
 		// 16 bits wide, because the top 8 bits are the current 8 pixels being drawn
@@ -751,10 +788,8 @@ void olc2C02::clock()
 	// their contents by 1 bit. This is because every cycle, the output progresses
 	// by 1 pixel. This means relatively, the state of the shifter is in sync
 	// with the pixels being drawn for that 8 pixel section of the scanline.
-	auto UpdateShifters = [&]()
-	{
-		if (mask.render_background)
-		{
+	let UpdateShifters = function() {
+		if (mask.render_background) {
 			// Shifting background tile pattern row
 			bg_shifter_pattern_lo <<= 1;
 			bg_shifter_pattern_hi <<= 1;
@@ -1427,5 +1462,5 @@ void olc2C02::clock()
 			frame_complete = true;
 			odd_frame = !odd_frame;
 		}
-	}
+	}*/
 }

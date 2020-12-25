@@ -24,7 +24,7 @@ window.mapper_000 = {
         return false;
     },
 
-    ppuMapRead : function(addr, mapped_addr) {
+    ppuMapRead : function(addr) {
         // There is no mapping required for PPU
         // PPU Address Bus          CHR ROM
         // 0x0000 -> 0x1FFF: Map    0x0000 -> 0x1FFF
