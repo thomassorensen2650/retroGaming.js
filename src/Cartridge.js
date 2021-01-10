@@ -7,7 +7,7 @@ window.Cartridge = {
     _hasTrainer : false,
     _mirror : 0,
     _mapperID : null,
-    _mapper : window.mapper_000,
+    _mapper : null,
     // char name[4]; // This is a hardcoded file format name.
     // uint8_t prg_rom_chunks; // Sized in bytes x 16384
     // uint8_t chr_rom_chunks; // Sized in bytes x 8192
@@ -44,15 +44,21 @@ window.Cartridge = {
                 _this._mirror  = (_this.header[6] & 0x01) ? "VERTICAL" : "HORIZONTAL";
                 _this._mapperID = ((_this.header[7] >> 4) << 4) | (_this.header[6] >> 4);
 
+                if (_this._mapperID === 0) {
+                    _this._mapper = window.mapper_000;
+                }else 
+                {
+                    throw 'Unknown Mapper ID:' + _this._mapperID;
+                }
                 // FIXME
-                window.mapper_000.nPRGBanks = _this.header[4];
+                _this._mapper.nPRGBanks = _this.header[4];
 
                 // Read program banks
                 let programBankSize = _this.header[4] * 16384;
                 _this._programBanks = new Uint8Array(buffer.slice(dataOffset, programBankSize + dataOffset));
     
 
-                window.mapper_000.nCHRBanks = _this.header[5];
+                _this._mapper.nCHRBanks = _this.header[5];
 
                 // Read chr banks.
                 dataOffset += programBankSize;
@@ -80,8 +86,11 @@ window.Cartridge = {
         }
     },
 
+    getMapper : function() {
+        return this._mapper;
+    },
     cpuRead : function (addr) {
-        let mapped_addr = window.mapper_000.cpuMapRead(addr);
+        let mapped_addr = this._mapper.cpuMapRead(addr);
         return mapped_addr !== false ? this._programBanks[mapped_addr] : false;           
     },
 

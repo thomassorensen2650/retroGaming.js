@@ -18,27 +18,43 @@ window.Bus = function Bus(cartridge, cpu, ppu) {
 
         //console.log("CPU Read address " + addr);
         let cartData = this._cartridge.cpuRead(addr);
-        if (cartData !== false)
-        {
+        if (cartData !== false) {
             return cartData;
         }
-        else if (addr >= 0x0000 && addr <= 0x1FFF)
-        {
+        else if (addr >= 0x0000 && addr <= 0x1FFF) {
             // System RAM Address Range, mirrored every 2048
             return this._cpuRam[addr & 0x07FF];
         }
-        else if (addr >= 0x2000 && addr <= 0x3FFF)
-        {
-            return 0; // fixme
+        else if (addr >= 0x2000 && addr <= 0x3FFF) {
             // PPU Address range, mirrored every 8
-            //return this.ppu.cpuRead(addr & 0x0007, bReadOnly);
+            return this._ppu.cpuRead(addr & 0x0007, readOnly);
+        }
+        else if (addr == 0x4015)
+        {
+            // APU Read Status
+            // data = apu.cpuRead(addr);
+            return 0;
+        }
+        else if (addr >= 0x4016 && addr <= 0x4017)
+        {
+            // Read out the MSB of the controller status word
+            //data = (controller_state[addr & 0x0001] & 0x80) > 0;
+            //controller_state[addr & 0x0001] <<= 1;
+            return 0;
+        }else
+        {
+            //console.log("try to load " + addr);
+            return 0;
         }
     }
 
     this.cpuWrite = function (addr, data) {
-        console.log("CPU Write address " + addr + " data: " + data);
-        if (this._cartridge.cpuWrite(addr, data))
-        {
+
+        if (addr == 6000 || addr == 0x6000) {
+            console.log(data);
+        }
+        //console.log("CPU Write address " + addr + " data: " + data);
+        if (this._cartridge.cpuWrite(addr, data)) {
             // The cartridge "sees all" and has the facility to veto
             // the propagation of the bus transaction if it requires.
             // This allows the cartridge to map any address to some
@@ -47,8 +63,7 @@ window.Bus = function Bus(cartridge, cpu, ppu) {
             // but I figured it might be quite a flexible way of adding
             // "custom" hardware to the NES in the future!
         }
-        else if (addr >= 0x0000 && addr <= 0x1FFF)
-        {
+        else if (addr >= 0x0000 && addr <= 0x1FFF) {
             // System RAM Address Range. The range covers 8KB, though
             // there is only 2KB available. That 2KB is "mirrored"
             // through this address range. Using bitwise AND to mask
@@ -56,16 +71,14 @@ window.Bus = function Bus(cartridge, cpu, ppu) {
             this._cpuRam[addr & 0x07FF] = data;
     
         }
-        else if (addr >= 0x2000 && addr <= 0x3FFF)
-        {
+        else if (addr >= 0x2000 && addr <= 0x3FFF) {
             // PPU Address range. The PPU only has 8 primary registers
             // and these are repeated throughout this range. We can
             // use bitwise AND operation to mask the bottom 3 bits, 
             // which is the equivalent of addr % 8.
-           // ppu.cpuWrite(addr & 0x0007, data);
+            ppu.cpuWrite(addr & 0x0007, data);
         }	
     }
-
     
     this.clock = function() {
         // Clocking. The heart and soul of an emulator. The running
@@ -100,25 +113,23 @@ window.Bus = function Bus(cartridge, cpu, ppu) {
     },
 
     this.drawPatternTable = function(canvas) {
-        let pt = this._ppu.getPatternTable(1,1);
+        let pt = this._ppu.getPatternTable(0, 0);
         var ctx = canvas.getContext('2d');
 
-        var id = ctx.createImageData(255, 255); // only do this once per page
+        var id = ctx.createImageData(128, 128); // only do this once per page
         var d  = id.data; 
 
         for (let i = 0; i < pt.length; i++) {
             d[i*4+0] = pt[i].c.r;
             d[i*4+1] = pt[i].c.g;
             d[i*4+2] = pt[i].c.b;
-            d[i*4+3] = 1;
+            d[i*4+3] = 255;
         }
-        ctx.putImageData(id, 0, 0 );     
-
-        
+        ctx.putImageData(id, 0, 0 );  
     },
+    
     this.loadCartridge = function(cartridgeBuffer) {
         this._cartridge.load(cartridgeBuffer);
-        
     }
 
 }

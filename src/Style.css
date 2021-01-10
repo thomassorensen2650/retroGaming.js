@@ -23,16 +23,27 @@ body {
     padding: 5px;
     margin: 2px;
 }
+
+.cmdButtonOn {
+    border: 1px solid #1FC742;
+    background-color: rgb(24, 141, 54);
+    color: #1FC742;
+    padding: 5px;
+    margin: 2px;
+}
+
 #debugWindow {
     background-color: black;
     color: #1FC742;
-    height: 100%;
+    min-height: 100%;
     position: fixed;
+    top: 0;
     bottom: 0;
     right: 0;
     width: 300px;
     z-index: 999;
     padding: 10px;
+    overflow: scroll;
 }
 
 #debugWindow h1 {
@@ -42,6 +53,21 @@ body {
     padding: 10px 0px 0px 0px ;
     border-bottom: 1px solid green;
 }
+
+#disassemble {
+    height: 200px;
+    overflow: scroll;
+}
+#variables {
+    height: 200px;
+    overflow: scroll;
+}
+
+#spriteCanvas {
+    height: 200px;
+    overflow: scroll;
+}
+
 #registerTable {
     width: 100%;
     padding: 5px;
@@ -51,6 +77,8 @@ body {
     width: 100%;
     padding: 5px;
 }
+
+
 
 #gameCanvas {
     background-color: #686868;

@@ -11,6 +11,66 @@
 
     <link rel="stylesheet" href="style.css">
     <script>
+    window.opLookup = {
+        ADC : { in : "Add with Carry In" },
+        SBC : { in : "Subtraction with Borrow In" },
+        AND : { in : "Bitwise Logic AND", func: "A = A & point value" },
+        ASL : { in : "Arithmetic Shift Left", func: "A = C <- (A << 1) <- 0" },
+        BCC : { in : "Branch if Carry Clear (if(C == 0) pc = address )" },
+        BCS : { in : "Branch if Carry Set (if(C == 1) pc = address)" },
+        BEQ : { in : "Branch if Equal (if(Z == 1) pc = address)" },
+        BIT : { in : "XXX FIXME" },
+        BMI : { in : "Branch if Negative",  func: "if(N == 1) pc = address" },
+        BNE : { in : "Branch if Not Equal", func: "if(Z == 0) pc = address" },
+        BPL : { in : "Branch if Positive",  func: "if(N == 0) pc = address" },
+        BRK : { in : "Program Sourced Interrupt", func: "" },
+        BVC : { in : "Branch if Overflow Clear", func: "if(V == 0) pc = address" },
+        BVS : { in : "Branch if Overflow Set", func: "if(V == 1) pc = address" },
+        CLC : { in : "Clear Carry Flag", func: "C = 0" },
+        CLD : { in : "Clear Decimal Flag", func: "D = 0" },
+        CLI : { in : "Disable Interrupts / Clear Interrupt Flag", func: "I = 0" },
+        CLV : { in : "Clear Overflow Flag", func: "V = 0" },
+        CMP : { in : "Compare Accumulator", func: "C <- A >= M      Z <- (A - M) == 0" },
+        CPX : { in : "Compare X Register", func: "C <- X >= M      Z <- (X - M) == 0" },
+        CPY : { in : "Compare Y Register", func: "C <- Y >= M      Z <- (Y - M) == 0" },
+        DEC : { in : "Decrement Value at Memory Location", func: "M = M - 1" },
+        DEX : { in : "Decrement X Register", func: "X = X - 1" },
+        DEY : { in : "Decrement Y Register", func: "Y = Y - 1" },
+        EOR : { in : "Bitwise Logic XOR", func: "A = A xor M" },
+        INC : { in : "Increment Value at Memory Location", func: "M = M + 1" },
+        INX : { in : "Increment X Register", func: "X = X + 1" },
+        INY : { in : "Increment Y Register", func: "Y = Y + 1" },
+        JMP : { in : "Jump To Location", func: "pc = address" },
+        JSR : { in : "Jump To Sub-Routine", func: "Push current pc to stack, pc = address" },
+        LDA : { in : "Load The Accumulator", func: "A = M" },
+        LDX : { in : "Load The X Register", func: "X = M" },
+        LDY : { in : "Load The Y Register", func: "Y = M" },
+        LSR : { in : "??????", func: "" },
+        NOP : { in : "No Instruction", func: "" },
+        ORA : { in : "Bitwise Logic OR", func: "A = A | M" },
+        PHA : { in : "Push Accumulator to Stack", func: "A -> stack" },
+        PHP : { in : "Push Status Register to Stack", func: "status -> stack" },
+        PLA : { in : "Pop Accumulator off Stack", func: "A <- stack" },
+        PLP : { in : "Pop Status Register off Stack", func: "Status <- stack" },
+        ROL : { in : "???", func: "" },
+        ROR : { in : "", func: "" },
+        RTI : { in : "", func: "" },
+        RTS : { in : "", func: "" },
+        SEC : { in : "Set Carry Flag", func: "C = 1" },
+        SED : { in : "Set Decimal Flag", func: "D = 1" },
+        SEI : { in : "Set Interrupt Flag / Enable Interrupts", func: "I = 1" },
+        STA : { in : "Store Accumulator at Address", func: "M = A" },
+        STX : { in : "Store X Register at Address", func: "M = X" },
+        STY : { in : "Store Y Register at Address", func: "M = Y" },
+        TAX : { in : "Transfer Accumulator to X Register", func: "X = A" },
+        TAY : { in : "Transfer Accumulator to Y Register", func: "Y = A" },
+        TSX : { in : "Transfer Stack Pointer to X Register", func: "X = stack pointer" },
+        TXA : { in : "Transfer X Register to Accumulator", func: "A = X" },
+        TXS : { in : "Transfer X Register to Stack Pointer", func: "stack pointer = X" },
+        TYA : { in : "Transfer Y Register to Accumulator", func: "A = Y" },
+        "???" : { in : "Unknown Instruction", func: "" }
+    };
+    
     window.toHex = function(number, size) {
             let hex = number.toString(16).toUpperCase();
             while (hex.length < size) {
@@ -27,10 +87,12 @@
     }
 
     let addRow = function(op) {
-            if (op.address === toHex(cpu.pc)){
-                return `<tr class="highlight"><td>${op.address}</td><td>${op.op}</td><td>${op.addrMode}</td></tr>`;
+            let desc = window.opLookup[op.op].in;
+            let func = window.opLookup[op.op].func;
+            if (op.address === toHex(cpu.pc, 4)){
+                return `<tr class="highlight"><td>${op.address}</td><td title="${desc}\nfunc: '${func ?? "N/A"}'\nCode:'${op.opCode}'">${op.op}</td><td>${op.addrMode}</td></tr>`;
             } else {
-                return `<tr><td>${op.address}</td><td>${op.op}</td><td>${op.addrMode}</td></tr>`
+                return `<tr><td>${op.address}</td><td title="${desc}\nfunc: '${func ?? "N/A"}'\nCode:'${op.opCode}'">${op.op}</td><td>${op.addrMode}</td></tr>`;
             }
     };
 
@@ -40,7 +102,11 @@
     let cpu = window.CPU;//new window.CPU(bus);
     let bus = new window.Bus(cartridge, cpu, ppu);
 
+    ppu.frameCompleteListener = function(frame) {
+        consle.log(frame);
+    }
     step = function() {
+
         do {
             
             bus.clock();
@@ -48,14 +114,32 @@
         while (cpu._cycles > 0)
         
     };
+
+    this.auto = false;
     loadRom = function() {
         console.log("Loading ROM");
         bus.loadCartridge(document.querySelector('input[type=file]').files[0]);
-        //window.asm = cpu.disassemble(0x0000, 0xFFFF);
+
+        window.setTimeout(function() {
+            //window.asm = window.CPU.disassemble(0x0000, 0xFFFF);
+            window.setInterval(function(){ 
+                if (window.auto) {
+                    window.step();
+                }
+            }, 1);
+        }, 10)
+       // cpu.reset();
+
+
+
     };
 
         cpu.connectBus(bus);
         cpu.propertyListener = function(property,value) {
+
+            if (window.auto) {
+              //  return;
+            }
             switch(property) {
                 case "a":
                     document.getElementById("reg_a_h").innerHTML = toHex(cpu.a, 2);
@@ -76,6 +160,14 @@
                 case "status":
                     document.getElementById("status_h").innerHTML = toHex(cpu.status, 2);
                     document.getElementById("status_b").innerHTML = toBin(cpu.status);
+
+                    //let bits = cpu.status.toString(2);
+                    for (let i = 7; i > 0; i--) {
+                        let id = "status_" + (7-i);
+                        let value =  (cpu.status >> 7-i) & 1;
+                        document.getElementById(id).innerHTML = value; 
+                    }
+
                     break;
                 case "pc":
                     document.getElementById("pc_h").innerHTML = toHex(cpu.pc, 4);
@@ -86,9 +178,23 @@
                         window.asm = cpu.disassemble(0x0000, 0xFFFF);
                     } */
 
-                    // window.asm.slice(cpu.pc-1, cpu.pc+9)
+                   // if (window.asm == undefined) {
+                    //    window.asm = window.CPU.disassemble(0x0000, 0xFFFF);
+                    //} 
+                    //window.asm.slice(cpu.pc-1, cpu.pc+9)
+                   /* let index = asm.indexOf(asm[cpu.pc]);
+
+                    for (let i = 0; i < 5; i++) {
+                        let op = asm[index+i];
+                        let x =  (op.address === toHex(cpu.pc)) ? 
+                            `<tr class="highlight"><td>${op.address}</td><td>${op.op}</td><td>${op.addrMode}</td></tr>` :
+                            `<tr><td>${op.address}</td><td>${op.op}</td><td>${op.addrMode}</td></tr>`; 
+                    } */
+                    //  asm.slice(index, index+5)
                     document.getElementById("disassembleTableBody").innerHTML = cpu.disassemble(cpu.pc, cpu.pc+10)
-                .map(x => addRow(x)).join('');
+                            .map(x => addRow(x)).join('');
+                    //cpu.disassemble(cpu.pc, cpu.pc+10)
+                
 
                     break;
                 default:
@@ -100,6 +206,13 @@
 </head>
 <body>
     <div id="debugWindow">
+        <h1>NES Commands</h1>
+        <div id="commands">
+            <button class="cmdButton" onclick="cpu.reset()">Reset</button>
+            <button class="cmdButton" onclick="document.getElementById('loadRom').click()">Load Game</button>  
+            <input type="file" id="loadRom" style="display:none" onchange="loadRom()"/>
+        </div>
+
         <h1>Registers</h1>
         <div id="variables">
             <table id="registerTable">
@@ -125,23 +238,69 @@
                         <td id="stkp_h">0x2200</td>
                         <td id="stkp_b">0x2200</td>
                     </tr>
+
+                    <tr>
+                        <td>Prog cnt.</td>
+                        <td id="pc_h">0x2200</td>
+                        <td id="pc_b">0x2200</td>
+                    </tr>
+
                     <tr>
                         <td>Status</td>
                         <td id="status_h">0x2200</td>
                         <td id="status_b">0x2200</td>
                     </tr>
+
+
                     <tr>
-                        <td>Prog cnt.</td>
-                        <td id="pc_h">0x2200</td>
-                        <td id="pc_b">0x2200</td>
+                        <td title="Carry Bit"> Status.C</td>
+                        <td></td>
+                        <td id="status_0">0</td>
+                    </tr>
+
+                    <tr>
+                        <td title="Zero"> Status.Z</td>
+                        <td></td>
+                        <td id="status_1">0</td>
+                    </tr>
+                    <tr>
+                        <td title="Disable Interrupts"> Status.I</td>
+                        <td></td>
+                        <td id="status_2">0</td>
+                    </tr>
+                    <tr>
+                        <td title="Decimal Mode"> Status.D</td>
+                        <td></td>
+                        <td id="status_3">0</td>
+                    </tr>
+                    <tr>
+                        <td title="Break"> Status.B</td>
+                        <td></td>
+                        <td id="status_4">0</td>
+                    </tr>
+                    <tr>
+                        <td title="Unused"> Status.U</td>
+                        <td></td>
+                        <td id="status_5">0</td>
+                    </tr>
+                    <tr>
+                        <td title="Overflow"> Status.O</td>
+                        <td></td>
+                        <td id="status_6">0</td>
+                    </tr>
+                    <tr>
+                        <td title="Negative"> Status.N</td>
+                        <td></td>
+                        <td id="status_7">0</td>
                     </tr>
                 </tbody>
             </table>
         </div>
         <h1>disassembler</h1>
         <div id="commands">
+            <button id="autoButton" class="cmdButton" onclick="window.auto = !window.auto; document.getElementById('autoButton').className = window.auto ? 'cmdButtonOn' : 'cmdButton' ">Run</button>
             <button class="cmdButton" onclick="step()">Step</button>
-           <button class="cmdButton" onclick="bus.drawPatternTable(document.getElementById('spriteCanvas'));">Goto PC</button>
+           <button class="cmdButton" onclick="bus.drawPatternTable(document.getElementById('spriteCanvas'));">Draw Pattern</button>
         </div>
         <div id="disassemble">
             <table id="disassembleTable">
@@ -149,13 +308,8 @@
                 <tbody id="disassembleTableBody"></tbody>
                 </table>
         </div>
-        <h1>NES Commands</h1>
-        <div id="commands">
-            <button class="cmdButton" onclick="cpu.reset()">Reset</button>
-            <button class="cmdButton" onclick="document.getElementById('loadRom').click()">Load Game</button>  
-            <input type="file" id="loadRom" style="display:none" onchange="loadRom()"/>
-        </div>
-        <canvas id="spriteCanvas" style="border: 1px solid red;" height="255px" width="255px" />
+
+        <canvas id="spriteCanvas" style="border: 1px solid red; " />
     </div>
     <canvas id="gameCanvas" />
 </body>

@@ -43,5 +43,9 @@ window.mapper_000 = {
             }
         }
         return false;
+    },
+
+    scanline : function () {
+
     }
 }

@@ -312,10 +312,10 @@ window.CPU = {
 	 */ 
 	setFlag : function(f, v) {
 		if (v) {
-			status |= f;
+			this.status |= f;
 		}
 		else {
-			status &= ~f;
+			this.status &= ~f;
 		}	
 	},
 
@@ -690,7 +690,7 @@ window.CPU = {
 		let value = this.fetch() ^ 0x00FF;
 
 		// Notice this is exactly the same as addition from here!
-		temp = this.a + value + this.getFlag(this._flags.C);
+		let temp = this.a + value + this.getFlag(this._flags.C);
 		this.setFlag(this._flags.C, temp & 0xFF00);
 		this.setFlag(this._flags.Z, ((temp & 0x00FF) == 0));
 		this.setFlag(this._flags.V, (temp ^ this.a) & (temp ^ value) & 0x0080);
@@ -730,11 +730,11 @@ window.CPU = {
 	 */
 	op_ASL : function(){
 		
-		temp = this.fetch() << 1;
+		let temp = this.fetch() << 1;
 		this.setFlag(this._flags.C, (temp & 0xFF00) > 0);
 		this.setFlag(this._flags.Z, (temp & 0x00FF) == 0x00);
 		this.setFlag(this._flags.N, temp & 0x80);
-		if (lookup[this._opcode].addrmode == this.adr_IMP) {
+		if (this.lookup[this._opcode].addrmode == this.adr_IMP) {
 			this.a = temp & 0x00FF;
 		}
 		else {
@@ -756,7 +756,7 @@ window.CPU = {
 			if ((this._addr_abs & 0xFF00) != (this.pc & 0xFF00))
 				this._cycles++;
 
-			this.pc = _addr_abs;
+			this.pc = this._addr_abs;
 		}
 		return 0;
 	},
@@ -802,7 +802,7 @@ window.CPU = {
 	 * @returns {number} always 0
 	 */
 	op_BIT : function() {
-		temp = a & this.fetch();
+		let temp = this.a & this.fetch();
 		this.setFlag(this._flags.Z, (temp & 0x00FF) == 0x00);
 		this.setFlag(this._flags.N, this._fetched & (1 << 7));
 		this.setFlag(this._flags.V, this._fetched & (1 << 6));
@@ -875,7 +875,7 @@ window.CPU = {
 
 		this.setFlag(this._flags.B, 1);
 		this.write(0x0100 + this.stkp, this.status);
-		stkp--;
+		this.stkp--;
 		this.setFlag(this._flags.B, 0);
 
 		this.pc = this.read(0xFFFE) | (this.read(0xFFFF) << 8);
@@ -1152,7 +1152,7 @@ window.CPU = {
 		let temp = this._fetched >> 1;
 		this.setFlag(this._flags.Z, (temp & 0x00FF) == 0x0000);
 		this.setFlag(this._flags.N, temp & 0x0080);
-		if (this.lookup[this._opcode].addrmode == adr_IMP) {
+		if (this.lookup[this._opcode].addrmode == this.adr_IMP) {
 			this.a = temp & 0x00FF;
 		}
 		else {
@@ -1161,7 +1161,7 @@ window.CPU = {
 		return 0;
 	},
 
-	op_NOP() {
+	op_NOP : function() {
 		// Sadly not all NOPs are equal, Ive added a few here
 		// based on https://wiki.nesdev.com/w/index.php/CPU_unofficial_opcodes
 		// and will add more based on game compatibility, and ultimately
@@ -1183,7 +1183,7 @@ window.CPU = {
 	  *Function:    A = A | M
 	  * Flags Out:   N, Z
 	  */
-	op_ORA(){
+	op_ORA : function() {
 		this.a = this.a | this.fetch();
 		this.setFlag(this._flags.Z, this.a == 0x00);
 		this.setFlag(this._flags.N, this.a & 0x80);
@@ -1228,18 +1228,18 @@ window.CPU = {
 	  */
 	op_PLP() {
 		this.stkp++;
-		this.status = read(0x0100 + this.stkp);
+		this.status = this.read(0x0100 + this.stkp);
 		this.setFlag(this._flags.U, 1);
 		return 0;
 	},
 
 	op_ROL() {
 		
-		let temp = (fetch() << 1) | this.getFlag(this._flags.C);
+		let temp = (this.fetch() << 1) | this.getFlag(this._flags.C);
 		this.setFlag(this._flags.C, temp & 0xFF00);
 		this.setFlag(this._flags.Z, (temp & 0x00FF) == 0x0000);
 		this.setFlag(this._flags.N, temp & 0x0080);
-		if (this.lookup[this._opcode].addrmode == adr_IMP) {
+		if (this.lookup[this._opcode].addrmode == this.adr_IMP) {
 			this.a = temp & 0x00FF;
 		}
 		else {
@@ -1250,11 +1250,11 @@ window.CPU = {
 
 	op_ROR : function() {
 		this.fetch();
-		let temp = (GetFlag(C) << 7) | (this._fetched >> 1);
+		let temp = (this.getFlag(this._flags.C) << 7) | (this._fetched >> 1);
 		this.setFlag(this._flags.C, this._fetched & 0x01);
 		this.setFlag(this._flags.Z, (temp & 0x00FF) == 0x00);
 		this.setFlag(this._flags.N, temp & 0x0080);
-		if (this.lookup[this._opcode].addrmode ==  adr_IMP) {
+		if (this.lookup[this._opcode].addrmode ==  this.adr_IMP) {
 			this.a = temp & 0x00FF;
 		}
 		else {
@@ -1340,8 +1340,8 @@ window.CPU = {
 	  */
 	op_TAX : function() {
 		this.x = this.a;
-		this.setFlag(this._flags.Z, x == 0x00);
-		this.setFlag(this._flags.N, x & 0x80);
+		this.setFlag(this._flags.Z, this.x == 0x00);
+		this.setFlag(this._flags.N, this.x & 0x80);
 		return 0;
 	},
 
@@ -1420,7 +1420,7 @@ window.CPU = {
 		let value = 0x00, lo = 0x00, hi = 0x00;
 		let mapLines = [];
 		let _cpu = window.CPU;
-		//let line_addr = 0;
+		let line_addr = 0;
 
 		// Starting at the specified address we read an instruction
 		// byte, which in turn yields information from the lookup table
@@ -1433,13 +1433,13 @@ window.CPU = {
 		while (addr <= nStop)
 		{
 
-			//line_addr = addr;
+			line_addr = addr;
 			//this = window.CPU;
 			// Prefix line with instruction address
 			//let sInst = toHex(addr, 4) + ": ";
 
-			// Read instruction, and get its readable name
 			let opcode = _cpu._bus.cpuRead(addr++, true) 
+			
 			//sInst += this.lookup[opcode].name + " ";
 			
 			 // FIXME : Remove the ?? null check, this is a hack
@@ -1533,7 +1533,8 @@ window.CPU = {
 			// address as the key. This makes it convenient to look for later
 			// as the instructions are variable in length, so a straight up
 			// incremental index is not sufficient.
-			mapLines.push(op);
+			//mapLines.push(op);
+			mapLines[line_addr] = op;
 		}
 		return mapLines;
 	}
